@@ -4,7 +4,6 @@ import {
   Container,
   Typography,
   Button,
-  Grid,
   Card,
   CardContent,
   CardActions,
@@ -154,9 +153,19 @@ const HomePage: React.FC = () => {
             Почему выбирают нас?
           </Typography>
           
-          <Grid container spacing={4}>
+          <Box 
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                md: 'repeat(2, 1fr)',
+                lg: 'repeat(3, 1fr)'
+              },
+              gap: 4
+            }}
+          >
             {features.map((feature, index) => (
-              <Grid item xs={12} md={6} lg={4} key={index}>
+              <Box key={index}>
                 <Card
                   sx={{
                     height: '100%',
@@ -178,9 +187,9 @@ const HomePage: React.FC = () => {
                     </Typography>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Container>
       </Box>
 
