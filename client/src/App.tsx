@@ -289,11 +289,7 @@ function App() {
                     <TrainerPage />
                   </ProtectedRoute>
                 } />
-                <Route path="/abacus" element={
-                  <ProtectedRoute>
-                    <AbacusPage />
-                  </ProtectedRoute>
-                } />
+                <Route path="/abacus" element={<AbacusPage />} />
                 <Route path="/profile" element={
                   <ProtectedRoute>
                     <ProfilePage />

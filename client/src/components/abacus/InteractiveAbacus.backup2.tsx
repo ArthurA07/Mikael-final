@@ -28,7 +28,6 @@ import {
   VolumeUp,
   VolumeOff,
   Speed,
-  RestartAlt,
 } from '@mui/icons-material';
 
 // Типы данных
@@ -60,25 +59,25 @@ interface GameStats {
   bestStreak: number;
 }
 
-// Adaptive sizing calculator - оптимизировано для помещения на экран
+// Adaptive sizing calculator
 const getAdaptiveSizes = (columnsCount: number, isMobile: boolean) => {
-  const baseMultiplier = isMobile ? 0.65 : 0.85; // Уменьшили общий размер
-  const columnMultiplier = Math.max(0.6, Math.min(1.2, 9 / columnsCount));
+  const baseMultiplier = isMobile ? 0.75 : 1;
+  const columnMultiplier = Math.max(0.65, Math.min(1.3, 9 / columnsCount));
   
   return {
-    frameWidth: Math.min(92, Math.max(60, columnsCount * 10)) + '%', // Немного меньше ширина
-    framePadding: isMobile ? '20px 15px' : '25px 20px', // Уменьшили отступы
-    rodHeight: (isMobile ? 280 : 320) * baseMultiplier * columnMultiplier, // Значительно уменьшили высоту
-    rodWidth: Math.max(4, 7 * columnMultiplier),
-    beadUpperWidth: Math.max(32, 50 * columnMultiplier * baseMultiplier),
-    beadUpperHeight: Math.max(18, 26 * columnMultiplier * baseMultiplier),
-    beadLowerWidth: Math.max(28, 42 * columnMultiplier * baseMultiplier),
-    beadLowerHeight: Math.max(16, 22 * columnMultiplier * baseMultiplier),
-    columnGap: Math.max(8, 16 * columnMultiplier),
-    upperSectionHeight: (isMobile ? 90 : 100) * baseMultiplier * columnMultiplier, // Уменьшили высоту секций
-    lowerSectionHeight: (isMobile ? 130 : 150) * baseMultiplier * columnMultiplier,
-    crossbeamHeight: Math.max(8, 12 * columnMultiplier),
-    fontSize: Math.max(0.7, 1.0 * columnMultiplier * baseMultiplier),
+    frameWidth: Math.min(96, Math.max(65, columnsCount * 11)) + '%',
+    framePadding: isMobile ? '25px 20px' : '35px 30px',
+    rodHeight: (isMobile ? 340 : 420) * baseMultiplier * columnMultiplier,
+    rodWidth: Math.max(5, 8 * columnMultiplier),
+    beadUpperWidth: Math.max(36, 55 * columnMultiplier * baseMultiplier),
+    beadUpperHeight: Math.max(20, 30 * columnMultiplier * baseMultiplier),
+    beadLowerWidth: Math.max(32, 48 * columnMultiplier * baseMultiplier),
+    beadLowerHeight: Math.max(18, 26 * columnMultiplier * baseMultiplier),
+    columnGap: Math.max(10, 20 * columnMultiplier),
+    upperSectionHeight: (isMobile ? 120 : 140) * baseMultiplier * columnMultiplier,
+    lowerSectionHeight: (isMobile ? 160 : 200) * baseMultiplier * columnMultiplier,
+    crossbeamHeight: Math.max(10, 16 * columnMultiplier),
+    fontSize: Math.max(0.8, 1.1 * columnMultiplier * baseMultiplier),
   };
 };
 
@@ -158,8 +157,8 @@ const Crossbeam = styled(Box)<{ adaptiveSizes: any }>(({ adaptiveSizes }) => ({
     inset 0 -3px 6px rgba(0,0,0,0.4),
     0 0 0 2px rgba(139, 69, 19, 0.3)
   `,
-  zIndex: 1, // Уменьшаем z-index чтобы костяшки были выше
   border: '2px solid #1a1a1a',
+  zIndex: 20,
 }));
 
 const Rod = styled(Box)<{ adaptiveSizes: any }>(({ adaptiveSizes }) => ({
@@ -220,7 +219,6 @@ const BeadDiamond = styled(Box)<{
   position: 'absolute',
   left: '50%',
   transform: `translateX(-50%) ${isActive ? 'scaleY(1.15)' : 'scaleY(0.92)'}`,
-  zIndex: 10, // Костяшки выше crossbeam
   transition: animating 
     ? 'all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)' 
     : 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -323,11 +321,11 @@ const ColumnLabel = styled(Typography)<{ adaptiveSizes: any }>(({ adaptiveSizes 
 }));
 
 const GameControls = styled(Paper)(({ theme }) => ({
-  padding: '16px',
+  padding: '20px',
   borderRadius: '15px',
   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   color: 'white',
-  marginBottom: '12px',
+  marginBottom: '20px',
 }));
 
 const StatsChip = styled(Chip)(({ theme }) => ({
@@ -366,25 +364,6 @@ const InteractiveAbacus: React.FC = () => {
   });
   const [startTime, setStartTime] = useState<number | null>(null);
   const [animatingBeads, setAnimatingBeads] = useState<Set<string>>(new Set());
-  const [isDemoRunning, setIsDemoRunning] = useState(false);
-  const [demoTimeouts, setDemoTimeouts] = useState<NodeJS.Timeout[]>([]);
-  const [demoWaitingForColumns, setDemoWaitingForColumns] = useState(false);
-
-  // Очистка таймеров при размонтировании
-  useEffect(() => {
-    return () => {
-      demoTimeouts.forEach(timeout => clearTimeout(timeout));
-    };
-  }, [demoTimeouts]);
-
-  // Принудительный сброс состояния демо при загрузке
-  useEffect(() => {
-    setIsDemoRunning(false);
-    setDemoTimeouts([]);
-    setDemoWaitingForColumns(false);
-  }, []);
-
-
 
   // Адаптивные размеры на основе количества колонок и размера экрана
   const adaptiveSizes = useMemo(() => 
@@ -486,13 +465,6 @@ const InteractiveAbacus: React.FC = () => {
 
   // Обработка клика по костяшке
   const handleBeadClick = useCallback((columnIndex: number, beadType: 'upper' | 'lower', beadIndex?: number) => {
-    console.log('handleBeadClick вызван:', { columnIndex, beadType, beadIndex, columnsLength: state.columns.length });
-    
-    // Проверка безопасности - если columnIndex выходит за границы массива
-    if (columnIndex >= state.columns.length || columnIndex < 0) {
-      console.error('columnIndex выходит за границы:', columnIndex, 'length:', state.columns.length);
-      return;
-    }
     
     playSound('click');
     
@@ -502,13 +474,11 @@ const InteractiveAbacus: React.FC = () => {
       newColumns[columnIndex].upper = !newColumns[columnIndex].upper;
     } else if (beadIndex !== undefined) {
       const currentLower = newColumns[columnIndex].lower;
-      // Правильная логика абакуса: клик поднимает все костяшки от этой и ниже
-      const targetValue = beadIndex + 1; // beadIndex 0 = 1 костяшка, beadIndex 1 = 2 костяшки, etc.
-      newColumns[columnIndex].lower = currentLower === targetValue ? 0 : targetValue;
+      newColumns[columnIndex].lower = beadIndex < currentLower ? beadIndex : beadIndex + 1;
     }
     
     setState(prev => ({ ...prev, columns: newColumns }));
-  }, [state.gameMode, playSound, state.columns.length]);
+  }, [state.gameMode, playSound]);
 
   // Игровые функции
   const startGame = useCallback(() => {
@@ -562,51 +532,9 @@ const InteractiveAbacus: React.FC = () => {
   const resetAbacus = useCallback(() => {
     const newColumns = state.columns.map(() => ({ upper: false, lower: 0 }));
     setState(prev => ({ ...prev, columns: newColumns }));
-  }, [state.columnsCount]);
-
-  // Запуск демо когда разрядность изменилась на 5
-  useEffect(() => {
-    if (demoWaitingForColumns && state.columnsCount === 5) {
-      setDemoWaitingForColumns(false);
-      
-      const demoNumbers = [12345, 23456, 34567, 45678, 56789];
-      const timeouts: NodeJS.Timeout[] = [];
-      let currentDemo = 0;
-      
-      const showNextNumber = () => {
-        if (currentDemo < demoNumbers.length) {
-          setAbacusValue(demoNumbers[currentDemo], true);
-          currentDemo++;
-          if (currentDemo < demoNumbers.length) {
-            const nextTimeout = setTimeout(showNextNumber, 2500 / state.speed);
-            timeouts.push(nextTimeout);
-            setDemoTimeouts(prev => [...prev, nextTimeout]);
-          } else {
-            // Последнее число показали, через некоторое время завершаем демо
-            const endTimeout = setTimeout(() => {
-              resetAbacus();
-              setIsDemoRunning(false);
-              setDemoTimeouts([]);
-            }, 2500 / state.speed);
-            timeouts.push(endTimeout);
-            setDemoTimeouts(prev => [...prev, endTimeout]);
-          }
-        }
-      };
-      
-      // Начинаем демо с небольшой задержкой
-      const startTimeout = setTimeout(showNextNumber, 500);
-      timeouts.push(startTimeout);
-      setDemoTimeouts(timeouts);
-    }
-  }, [demoWaitingForColumns, state.columnsCount, setAbacusValue, resetAbacus, state.speed]);
+  }, [state.columns.length]);
 
   const changeColumnsCount = useCallback((count: number) => {
-    console.log('!!! changeColumnsCount ВЫЗВАН !!!', { 
-      newCount: count, 
-      currentCount: state.columnsCount,
-      stackTrace: new Error().stack 
-    });
     const newColumns = Array(count).fill(null).map(() => ({ upper: false, lower: 0 }));
     setState(prev => ({ 
       ...prev, 
@@ -628,38 +556,23 @@ const InteractiveAbacus: React.FC = () => {
     }
   }, [state.columns.length, setAbacusValue]);
 
-  // Демонстрационный режим (всегда на 5 разрядах)
+  // Демонстрационный режим
   const runDemo = useCallback(() => {
-    console.log('!!! runDemo ВЫЗВАН !!!', { 
-      isDemoRunning, 
-      columnsCount: state.columnsCount,
-      stackTrace: new Error().stack 
-    });
+    const demoNumbers = [12345, 67890, 11111, 55555, 99999].slice(0, state.columnsCount);
+    let currentDemo = 0;
     
-    // Если демо уже работает - останавливаем его
-    if (isDemoRunning) {
-      // Останавливаем все таймеры
-      demoTimeouts.forEach(timeout => clearTimeout(timeout));
-      setDemoTimeouts([]);
-      setIsDemoRunning(false);
-      setDemoWaitingForColumns(false);
-      resetAbacus();
-      return;
-    }
-
-    // Отмечаем что демо запущено
-    setIsDemoRunning(true);
+    const showNextNumber = () => {
+      if (currentDemo < demoNumbers.length) {
+        setAbacusValue(demoNumbers[currentDemo], true);
+        currentDemo++;
+        setTimeout(showNextNumber, 3000 / state.speed);
+      } else {
+        resetAbacus();
+      }
+    };
     
-    // Если уже 5 разрядов - запускаем демо через useEffect
-    if (state.columnsCount === 5) {
-      setDemoWaitingForColumns(true);
-    } else {
-      // Демо работает только на 5 разрядах
-      alert('Демо работает только на 5 разрядах. Пожалуйста, установите 5 разрядов вручную.');
-      setIsDemoRunning(false);
-      return;
-    }
-  }, [isDemoRunning, demoTimeouts, state.columnsCount]);
+    showNextNumber();
+  }, [setAbacusValue, resetAbacus, state.columnsCount, state.speed]);
 
   // Рендер одной колонки абакуса
   const renderColumn = useCallback((column: AbacusColumn, columnIndex: number) => {
@@ -695,39 +608,29 @@ const InteractiveAbacus: React.FC = () => {
               onClick={() => handleBeadClick(columnIndex, 'upper')}
               style={{
                 top: column.upper ? 
-                  `${adaptiveSizes.upperSectionHeight - adaptiveSizes.beadUpperHeight - adaptiveSizes.crossbeamHeight - 15}px` : 
-                  '15px', // Увеличили отступы для более заметного движения
+                  `${adaptiveSizes.upperSectionHeight - adaptiveSizes.beadUpperHeight - adaptiveSizes.crossbeamHeight - 10}px` : 
+                  '10px',
               }}
             />
           </UpperSection>
           
           {/* Нижняя секция - четыре костяшки (значения 1) */}
           <LowerSection adaptiveSizes={adaptiveSizes}>
-            {[0, 1, 2, 3].map((beadIndex) => {
-              const isActive = beadIndex < column.lower;
-              const beadSpacing = adaptiveSizes.beadLowerHeight + 4;
-              
-              // Неактивные костяшки располагаются почти у самого низа секции
-              const inactiveBaseTop = adaptiveSizes.lowerSectionHeight - 10;
-              // Активные костяшки поднимаются к перекладине, но не пересекают её
-              const activeBaseTop = adaptiveSizes.crossbeamHeight + 20;
-              
-              return (
-                <BeadDiamond
-                  key={beadIndex}
-                  isActive={isActive}
-                  isUpper={false}
-                  adaptiveSizes={adaptiveSizes}
-                  animating={isAnimating}
-                  onClick={() => handleBeadClick(columnIndex, 'lower', beadIndex)}
-                  style={{
-                    top: isActive 
-                      ? `${activeBaseTop + beadIndex * beadSpacing}px` // активные поднимаются к crossbeam
-                      : `${inactiveBaseTop - (4 - beadIndex - 1) * beadSpacing}px`, // неактивные остаются внизу
-                  }}
-                />
-              );
-            })}
+            {[0, 1, 2, 3].map((beadIndex) => (
+              <BeadDiamond
+                key={beadIndex}
+                isActive={beadIndex < column.lower}
+                isUpper={false}
+                adaptiveSizes={adaptiveSizes}
+                animating={isAnimating}
+                onClick={() => handleBeadClick(columnIndex, 'lower', beadIndex)}
+                style={{
+                  top: beadIndex < column.lower 
+                    ? `${15 + beadIndex * (adaptiveSizes.beadLowerHeight + 8)}px`
+                    : `${adaptiveSizes.lowerSectionHeight - (4 - beadIndex) * (adaptiveSizes.beadLowerHeight + 8) - 15}px`,
+                }}
+              />
+            ))}
           </LowerSection>
         </Rod>
         
@@ -757,46 +660,13 @@ const InteractiveAbacus: React.FC = () => {
   }, [state.columns.length, state.showLabels, state.showValue, adaptiveSizes, animatingBeads, handleBeadClick]);
 
   return (
-    <Box sx={{ maxWidth: '100%', mx: 'auto', p: 1 }}>
+    <Box sx={{ maxWidth: '100%', mx: 'auto', p: 2 }}>
       {/* Игровые контролы */}
       <GameControls elevation={3}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2, mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 700, mr: 2 }}>
             🎮 Игровая панель
           </Typography>
-          
-          <TextField
-            label={state.gameMode ? "Ваш ответ" : "Число"}
-            type="number"
-            value={inputValue}
-            onChange={handleInputChange}
-            size="small"
-            sx={{ 
-              minWidth: "140px",
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: "rgba(255,255,255,0.9)",
-                "& fieldset": { borderColor: "rgba(255,255,255,0.5)" },
-                "&:hover fieldset": { borderColor: "white" },
-                "&.Mui-focused fieldset": { borderColor: "#FFD93D" }
-              },
-              "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.8)" }
-            }}
-            InputProps={{ style: { fontSize: "1rem", fontWeight: 600, color: "#2c3e50" } }}
-          />
-
-          <Button
-            variant="contained"
-            startIcon={<RestartAlt />}
-            onClick={resetAbacus}
-            size="small"
-            sx={{ 
-              bgcolor: '#FF6B6B',
-              '&:hover': { bgcolor: '#FF5252' },
-              fontWeight: 600
-            }}
-          >
-            Сбросить
-          </Button>
           
           {gameStats.totalAnswers > 0 && (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -843,13 +713,9 @@ const InteractiveAbacus: React.FC = () => {
                 variant="outlined"
                 startIcon={<Speed />}
                 onClick={runDemo}
-                sx={{ 
-                  color: 'white', 
-                  borderColor: 'white',
-                  backgroundColor: isDemoRunning ? 'rgba(255, 0, 0, 0.3)' : 'transparent'
-                }}
+                sx={{ color: 'white', borderColor: 'white' }}
               >
-                {isDemoRunning ? 'Стоп Демо' : 'Демо'}
+                Демо
               </Button>
             </>
           ) : (
@@ -894,7 +760,7 @@ const InteractiveAbacus: React.FC = () => {
       </GameControls>
 
       {/* Основной абакус */}
-      <Paper elevation={6} sx={{ mb: 1.5, overflow: 'hidden', borderRadius: '20px' }}>
+      <Paper elevation={6} sx={{ mb: 3, overflow: 'hidden', borderRadius: '20px' }}>
         <AbacusFrame adaptiveSizes={adaptiveSizes}>
           <Crossbeam adaptiveSizes={adaptiveSizes} />
           <Box sx={{ 
@@ -914,14 +780,38 @@ const InteractiveAbacus: React.FC = () => {
       <Paper 
         elevation={2} 
         sx={{ 
-          p: 2, 
+          p: 3, 
           borderRadius: '15px',
           background: 'linear-gradient(135deg, #F8F9FA, #E9ECEF)',
         }}
       >
-        {/* Кнопка настроек */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
+        {/* Числовое поле и основные кнопки */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3, alignItems: 'center' }}>
+          <TextField
+            label="Число"
+            type="number"
+            value={inputValue}
+            onChange={handleInputChange}
+            
+            sx={{ minWidth: '150px' }}
+            InputProps={{
+              style: { fontSize: '1.2rem', fontWeight: 600 }
+            }}
+          />
           
+          <Button
+            variant="contained"
+            startIcon={<Refresh />}
+            onClick={resetAbacus}
+            
+            sx={{ 
+              bgcolor: '#FF6B6B',
+              '&:hover': { bgcolor: '#FF5252' },
+            }}
+          >
+            Сбросить
+          </Button>
+
           <Fab
             size="small"
             onClick={() => setShowSettings(!showSettings)}
