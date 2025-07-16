@@ -284,11 +284,7 @@ function App() {
                     <Dashboard />
                   </ProtectedRoute>
                 } />
-                <Route path="/trainer" element={
-                  <ProtectedRoute>
-                    <TrainerPage />
-                  </ProtectedRoute>
-                } />
+                <Route path="/trainer" element={<TrainerPage />} />
                 <Route path="/abacus" element={<AbacusPage />} />
                 <Route path="/profile" element={
                   <ProtectedRoute>

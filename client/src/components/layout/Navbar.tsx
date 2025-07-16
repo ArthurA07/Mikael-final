@@ -46,7 +46,7 @@ const Navbar: React.FC = () => {
   const menuItems = [
     { text: '🏠 Главная', path: '/', icon: <Home />, public: true },
     { text: '📊 Панель', path: '/dashboard', icon: <DashboardIcon />, public: false },
-    { text: '🎯 Тренажёр', path: '/trainer', icon: <Calculate />, public: false },
+    { text: '🎯 Тренажёр', path: '/trainer', icon: <Calculate />, public: true },
     { text: '🧮 Абакус', path: '/abacus', icon: <ViewModule />, public: true },
     { text: '🏆 Достижения', path: '/achievements', icon: <EmojiEvents />, public: false },
     { text: '📈 Статистика', path: '/stats', icon: <BarChart />, public: false },

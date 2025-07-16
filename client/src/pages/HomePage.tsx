@@ -153,31 +153,57 @@ const HomePage: React.FC = () => {
             </Typography>
           </Box>
           
-          <Button
-            variant="contained"
-            size="large"
-            onClick={handleGetStarted}
-            endIcon={<ArrowForward />}
-            sx={{
-              py: 2,
-              px: 4,
-              fontSize: '1.2rem',
-              fontWeight: 600,
-              borderRadius: '50px',
-              background: 'linear-gradient(45deg, #FF6B6B, #4ECDC4)',
-              color: 'white',
-              textTransform: 'none',
-              boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-3px) scale(1.05)',
-                boxShadow: '0 12px 30px rgba(0,0,0,0.3)',
-                background: 'linear-gradient(45deg, #FF8A80, #80CBC4)',
-              },
-            }}
-          >
-            🚀 Начать приключение!
-          </Button>
+          <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => navigate('/trainer')}
+              endIcon={<ArrowForward />}
+              sx={{
+                py: 2,
+                px: 4,
+                fontSize: '1.2rem',
+                fontWeight: 600,
+                borderRadius: '50px',
+                background: 'linear-gradient(45deg, #FF6B6B, #4ECDC4)',
+                color: 'white',
+                textTransform: 'none',
+                boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-3px) scale(1.05)',
+                  boxShadow: '0 12px 30px rgba(0,0,0,0.3)',
+                  background: 'linear-gradient(45deg, #FF8A80, #80CBC4)',
+                },
+              }}
+            >
+              🎯 Попробовать тренажёр!
+            </Button>
+            
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={() => navigate('/abacus')}
+              sx={{
+                py: 2,
+                px: 4,
+                fontSize: '1.2rem',
+                fontWeight: 600,
+                borderRadius: '50px',
+                borderColor: 'white',
+                color: 'white',
+                textTransform: 'none',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  borderColor: 'white',
+                  transform: 'translateY(-3px) scale(1.05)',
+                },
+              }}
+            >
+              🧮 Абакус
+            </Button>
+          </Box>
         </Container>
       </Box>
 
@@ -385,7 +411,7 @@ const HomePage: React.FC = () => {
             <Button
               variant="contained"
               size="large"
-              onClick={() => navigate('/register')}
+              onClick={() => navigate('/trainer')}
               sx={{
                 py: 2,
                 px: 4,
@@ -404,13 +430,13 @@ const HomePage: React.FC = () => {
                 },
               }}
             >
-              🎓 Зарегистрироваться
+              🎯 Начать тренировки!
             </Button>
             
             <Button
               variant="outlined"
               size="large"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/abacus')}
               sx={{
                 py: 2,
                 px: 4,
@@ -428,7 +454,7 @@ const HomePage: React.FC = () => {
                 },
               }}
             >
-              🔑 Войти
+              🧮 Изучить абакус
             </Button>
           </Box>
         </Container>
