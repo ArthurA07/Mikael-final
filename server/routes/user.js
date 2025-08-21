@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const Training = require('../models/Training');
 const { protect } = require('../middleware/auth');
+const FreeAccess = require('../models/FreeAccess');
 
 const router = express.Router();
 
@@ -364,6 +365,43 @@ router.put('/stats', [
         message: 'Ошибка при обновлении статистики'
       }
     });
+  }
+});
+
+// Проверка/выдача бесплатного доступа к абакусу (по IP, 20 минут, один раз)
+router.post('/free-abacus', async (req, res) => {
+  try {
+    const ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').toString();
+    if (!ip) {
+      return res.status(400).json({ success: false, error: { message: 'Не удалось определить IP' } });
+    }
+
+    const now = new Date();
+    let record = await FreeAccess.findOne({ ip });
+
+    // Если есть блокировка — доступ запрещен
+    if (record && record.blocked) {
+      return res.json({ success: true, data: { allowed: false, reason: 'blocked' } });
+    }
+
+    // Если записи нет — создаём 20 минут доступа
+    if (!record) {
+      const startedAt = now;
+      const expiresAt = new Date(now.getTime() + 20 * 60 * 1000);
+      record = await FreeAccess.create({ ip, startedAt, expiresAt });
+      return res.json({ success: true, data: { allowed: true, expiresAt } });
+    }
+
+    // Если доступ есть и не истёк — пускаем
+    if (record.expiresAt > now) {
+      return res.json({ success: true, data: { allowed: true, expiresAt: record.expiresAt } });
+    }
+
+    // Если истёк — повторно бесплатно не разрешаем
+    return res.json({ success: true, data: { allowed: false, reason: 'expired' } });
+  } catch (error) {
+    console.error('Free abacus access error:', error);
+    res.status(500).json({ success: false, error: { message: 'Ошибка при проверке доступа' } });
   }
 });
 

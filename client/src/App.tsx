@@ -11,6 +11,7 @@ import LegalPrivacy from './pages/LegalPrivacy';
 import LegalDataConsent from './pages/LegalDataConsent';
 import LegalUserAgreement from './pages/LegalUserAgreement';
 import LegalPublicOffer from './pages/LegalPublicOffer';
+import PricingPage from './pages/PricingPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
@@ -282,6 +283,7 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/privacy" element={<LegalPrivacy />} />
                 <Route path="/data-consent" element={<LegalDataConsent />} />
                 <Route path="/user-agreement" element={<LegalUserAgreement />} />

@@ -201,8 +201,53 @@ const HomePage: React.FC = () => {
                 },
               }}
             >
-              🧮 Абакус
+              🧮 Попробовать абакус
             </Button>
+
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={() => navigate('/pricing')}
+              sx={{
+                py: 2,
+                px: 4,
+                fontSize: '1.2rem',
+                fontWeight: 600,
+                borderRadius: '50px',
+                borderColor: 'white',
+                color: 'white',
+                textTransform: 'none',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  borderColor: 'white',
+                  transform: 'translateY(-3px) scale(1.05)',
+                },
+              }}
+            >
+              💳 Тарифы
+            </Button>
+
+            {!isAuthenticated && (
+              <>
+                <Button
+                  variant="text"
+                  size="large"
+                  onClick={() => navigate('/login')}
+                  sx={{ color: 'white', textTransform: 'none', fontWeight: 600 }}
+                >
+                  Войти
+                </Button>
+                <Button
+                  variant="text"
+                  size="large"
+                  onClick={() => navigate('/register')}
+                  sx={{ color: 'white', textTransform: 'none', fontWeight: 600 }}
+                >
+                  Зарегистрироваться
+                </Button>
+              </>
+            )}
           </Box>
         </Container>
       </Box>
