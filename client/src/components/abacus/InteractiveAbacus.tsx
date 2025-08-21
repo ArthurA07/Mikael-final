@@ -725,7 +725,8 @@ const InteractiveAbacus: React.FC = () => {
               // Неактивные костяшки располагаются почти у самого низа секции
               const inactiveBaseTop = adaptiveSizes.lowerSectionHeight - 10;
               // Активные костяшки поднимаются к перекладине и останавливаются ниже неё
-              const activeBaseTop = adaptiveSizes.crossbeamHeight + 8;
+              const gapBelowCrossbeam = Math.max(12, Math.round(adaptiveSizes.beadLowerHeight * 0.6));
+              const activeBaseTop = adaptiveSizes.crossbeamHeight + gapBelowCrossbeam;
               
               return (
                 <BeadDiamond
