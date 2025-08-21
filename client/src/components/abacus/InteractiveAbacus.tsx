@@ -624,7 +624,8 @@ const InteractiveAbacus: React.FC = () => {
     
     if (value <= maxValue) {
       setInputValue(event.target.value);
-      setAbacusValue(value, true);
+      // Для лучшего отклика при вводе отключаем анимацию
+      setAbacusValue(value, false);
     }
   }, [state.columns.length, setAbacusValue]);
 
