@@ -28,8 +28,10 @@ import {
   VolumeUp,
   VolumeOff,
   Speed,
-  RestartAlt,
-} from '@mui/icons-material';
+    RestartAlt,
+  Add,
+  Remove,
+ } from '@mui/icons-material';
 
 // Типы данных
 interface AbacusColumn {
@@ -369,6 +371,7 @@ const InteractiveAbacus: React.FC = () => {
   const [isDemoRunning, setIsDemoRunning] = useState(false);
   const [demoTimeouts, setDemoTimeouts] = useState<NodeJS.Timeout[]>([]);
   const [demoWaitingForColumns, setDemoWaitingForColumns] = useState(false);
+  const [draftValue, setDraftValue] = useState<string>('0');
 
   // Очистка таймеров при размонтировании
   useEffect(() => {
@@ -402,10 +405,11 @@ const InteractiveAbacus: React.FC = () => {
     }, 0);
   }, []);
 
-  // Обновление значения при изменении абакуса
+  // Обновление отображаемого значения при изменении абакуса
   useEffect(() => {
     const value = calculateValue(state.columns);
     setInputValue(value.toString());
+    setDraftValue(value.toString());
   }, [state.columns, calculateValue]);
 
   // Установка числа на абакусе с анимацией
@@ -618,16 +622,28 @@ const InteractiveAbacus: React.FC = () => {
     }));
   }, []);
 
-  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(event.target.value) || 0;
+  // Черновой ввод (не применяет к абакусу сразу)
+  const handleDraftChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = event.target.value.replace(/[^0-9]/g, '');
     const maxValue = Math.pow(10, state.columns.length) - 1;
-    
-    if (value <= maxValue) {
-      setInputValue(event.target.value);
-      // Для лучшего отклика при вводе отключаем анимацию
-      setAbacusValue(value, false);
-    }
-  }, [state.columns.length, setAbacusValue]);
+    const value = Math.min(parseInt(raw || '0', 10), maxValue);
+    setDraftValue(value.toString());
+  }, [state.columns.length]);
+
+  // Подтвердить ввод: Enter или blur
+  const commitDraftValue = useCallback(() => {
+    const value = parseInt(draftValue || '0', 10) || 0;
+    setAbacusValue(value, true);
+  }, [draftValue, setAbacusValue]);
+
+  // Инкремент/декремент с мгновенной визуализацией
+  const stepValue = useCallback((delta: number) => {
+    const current = parseInt(draftValue || '0', 10) || 0;
+    const maxValue = Math.pow(10, state.columns.length) - 1;
+    const next = Math.min(Math.max(0, current + delta), maxValue);
+    setDraftValue(next.toString());
+    setAbacusValue(next, true);
+  }, [draftValue, state.columns.length, setAbacusValue]);
 
   // Демонстрационный режим (всегда на 5 разрядах)
   const runDemo = useCallback(() => {
@@ -768,22 +784,44 @@ const InteractiveAbacus: React.FC = () => {
           
           <TextField
             label={state.gameMode ? "Ваш ответ" : "Число"}
-            type="number"
-            value={inputValue}
-            onChange={handleInputChange}
+            type="text"
+            value={draftValue}
+            onChange={handleDraftChange}
+            onBlur={commitDraftValue}
+            onKeyDown={(e) => { if (e.key === 'Enter') commitDraftValue(); }}
             size="small"
             sx={{ 
-              minWidth: "140px",
+              minWidth: "160px",
               "& .MuiOutlinedInput-root": {
                 backgroundColor: "rgba(255,255,255,0.9)",
                 "& fieldset": { borderColor: "rgba(255,255,255,0.5)" },
                 "&:hover fieldset": { borderColor: "white" },
                 "&.Mui-focused fieldset": { borderColor: "#FFD93D" }
               },
-              "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.8)" }
+              "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.8)" },
+              "& input[type=number]": { MozAppearance: 'textfield' },
             }}
             InputProps={{ style: { fontSize: "1rem", fontWeight: 600, color: "#2c3e50" } }}
           />
+
+          <Button
+            variant="outlined"
+            onClick={() => stepValue(-1)}
+            size="small"
+            sx={{ color: 'white', borderColor: 'white' }}
+            startIcon={<Remove />}
+          >
+            Убавить
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => stepValue(1)}
+            size="small"
+            sx={{ color: 'white', borderColor: 'white' }}
+            startIcon={<Add />}
+          >
+            Прибавить
+          </Button>
 
           <Button
             variant="contained"
