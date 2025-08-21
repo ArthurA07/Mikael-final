@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios from 'axios';
+import { config } from '../config';
 
 // Типы данных
 interface User {
@@ -53,9 +54,7 @@ export const useAuth = () => {
 };
 
 // Настройка axios
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-axios.defaults.baseURL = API_BASE_URL;
+axios.defaults.baseURL = config.API_BASE_URL;
 
 // Провайдер контекста
 interface AuthProviderProps {
