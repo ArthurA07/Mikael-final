@@ -29,8 +29,6 @@ import {
   VolumeOff,
   Speed,
     RestartAlt,
-  Add,
-  Remove,
  } from '@mui/icons-material';
 
 // Типы данных
@@ -778,50 +776,36 @@ const InteractiveAbacus: React.FC = () => {
       {/* Игровые контролы */}
       <GameControls elevation={3}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2, mb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, mr: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mr: 2, minWidth: 160 }}>
             🎮 Игровая панель
           </Typography>
           
-          <TextField
-            label={state.gameMode ? "Ваш ответ" : "Число"}
-            type="text"
-            value={draftValue}
-            onChange={handleDraftChange}
-            onBlur={commitDraftValue}
-            onKeyDown={(e) => { if (e.key === 'Enter') commitDraftValue(); }}
-            size="small"
-            sx={{ 
-              minWidth: "160px",
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: "rgba(255,255,255,0.9)",
-                "& fieldset": { borderColor: "rgba(255,255,255,0.5)" },
-                "&:hover fieldset": { borderColor: "white" },
-                "&.Mui-focused fieldset": { borderColor: "#FFD93D" }
-              },
-              "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.8)" },
-              "& input[type=number]": { MozAppearance: 'textfield' },
-            }}
-            InputProps={{ style: { fontSize: "1rem", fontWeight: 600, color: "#2c3e50" } }}
-          />
+          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.9)', mb: 0.5 }}>
+              Число
+            </Typography>
+            <TextField
+              type="text"
+              value={draftValue}
+              onChange={handleDraftChange}
+              onBlur={commitDraftValue}
+              onKeyDown={(e) => { if (e.key === 'Enter') commitDraftValue(); }}
+              size="small"
+              sx={{ 
+                minWidth: "220px",
+                "& .MuiOutlinedInput-root": {
+                  backgroundColor: "rgba(255,255,255,0.9)",
+                  "& fieldset": { borderColor: "rgba(255,255,255,0.5)" },
+                  "&:hover fieldset": { borderColor: "white" },
+                  "&.Mui-focused fieldset": { borderColor: "#FFD93D" }
+                },
+                "& input[type=number]": { MozAppearance: 'textfield' },
+              }}
+              InputProps={{ style: { fontSize: "1rem", fontWeight: 600, color: "#2c3e50" } }}
+            />
+          </Box>
 
-          <Button
-            variant="outlined"
-            onClick={() => stepValue(-1)}
-            size="small"
-            sx={{ color: 'white', borderColor: 'white' }}
-            startIcon={<Remove />}
-          >
-            Убавить
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => stepValue(1)}
-            size="small"
-            sx={{ color: 'white', borderColor: 'white' }}
-            startIcon={<Add />}
-          >
-            Прибавить
-          </Button>
+
 
           <Button
             variant="contained"
