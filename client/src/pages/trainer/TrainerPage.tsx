@@ -504,7 +504,7 @@ const TrainerPage: React.FC = () => {
   const renderResults = () => {
     if (!state.currentSession) return null;
     
-    const { accuracy, totalTime, averageTime, score, problems } = state.currentSession;
+    const { accuracy, averageTime, score, problems } = state.currentSession;
     const correctCount = problems.filter(p => p.isCorrect).length;
     
     return (

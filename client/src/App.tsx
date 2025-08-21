@@ -282,6 +282,10 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/privacy" element={<LegalPrivacy />} />
+                <Route path="/data-consent" element={<LegalDataConsent />} />
+                <Route path="/user-agreement" element={<LegalUserAgreement />} />
+                <Route path="/public-offer" element={<LegalPublicOffer />} />
                 
                 {/* Защищённые маршруты */}
                 <Route path="/dashboard" element={
@@ -309,12 +313,6 @@ function App() {
                 
                 {/* Перенаправление на главную для несуществующих маршрутов */}
                 <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-              <Routes>
-                <Route path="/privacy" element={<LegalPrivacy />} />
-                <Route path="/data-consent" element={<LegalDataConsent />} />
-                <Route path="/user-agreement" element={<LegalUserAgreement />} />
-                <Route path="/public-offer" element={<LegalPublicOffer />} />
               </Routes>
               <Footer />
             </div>
