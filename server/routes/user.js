@@ -368,15 +368,25 @@ router.put('/stats', [
   }
 });
 
+// Технический маршрут: определить IP клиента и статус в белом списке
+router.get('/my-ip', async (req, res) => {
+  const rawIp = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket?.remoteAddress || '').toString();
+  const firstIp = rawIp.split(',')[0].trim();
+  const ip = firstIp.replace('::ffff:', '');
+  const whitelist = [...(process.env.FREE_ACCESS_WHITELIST || '').split(',').map(s => s.trim()).filter(Boolean), '217.15.57.145'];
+  const whitelisted = ip && whitelist.includes(ip);
+  res.json({ success: true, data: { ip, rawIp, whitelisted, whitelist } });
+});
+
 // Проверка/выдача бесплатного доступа к абакусу (по IP, 20 минут, один раз)
 router.post('/free-abacus', async (req, res) => {
   try {
     const rawIp = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket?.remoteAddress || '').toString();
     const firstIp = rawIp.split(',')[0].trim();
     const ip = firstIp.replace('::ffff:', '');
-    const whitelist = (process.env.FREE_ACCESS_WHITELIST || '').split(',').map(s => s.trim()).filter(Boolean);
+    const whitelist = [...(process.env.FREE_ACCESS_WHITELIST || '').split(',').map(s => s.trim()).filter(Boolean), '217.15.57.145'];
     if (ip && whitelist.includes(ip)) {
-      return res.json({ success: true, data: { allowed: true, reason: 'whitelist' } });
+      return res.json({ success: true, data: { allowed: true, reason: 'whitelist', ip } });
     }
     if (!ip) {
       return res.status(400).json({ success: false, error: { message: 'Не удалось определить IP' } });
@@ -387,7 +397,7 @@ router.post('/free-abacus', async (req, res) => {
 
     // Если есть блокировка — доступ запрещен
     if (record && record.blocked) {
-      return res.json({ success: true, data: { allowed: false, reason: 'blocked' } });
+      return res.json({ success: true, data: { allowed: false, reason: 'blocked', ip } });
     }
 
     // Если записи нет — создаём 20 минут доступа
@@ -395,16 +405,16 @@ router.post('/free-abacus', async (req, res) => {
       const startedAt = now;
       const expiresAt = new Date(now.getTime() + 20 * 60 * 1000);
       record = await FreeAccess.create({ ip, startedAt, expiresAt });
-      return res.json({ success: true, data: { allowed: true, expiresAt } });
+      return res.json({ success: true, data: { allowed: true, expiresAt, ip } });
     }
 
     // Если доступ есть и не истёк — пускаем
     if (record.expiresAt > now) {
-      return res.json({ success: true, data: { allowed: true, expiresAt: record.expiresAt } });
+      return res.json({ success: true, data: { allowed: true, expiresAt: record.expiresAt, ip } });
     }
 
     // Если истёк — повторно бесплатно не разрешаем
-    return res.json({ success: true, data: { allowed: false, reason: 'expired' } });
+    return res.json({ success: true, data: { allowed: false, reason: 'expired', ip } });
   } catch (error) {
     console.error('Free abacus access error:', error);
     res.status(500).json({ success: false, error: { message: 'Ошибка при проверке доступа' } });
