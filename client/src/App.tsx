@@ -6,6 +6,11 @@ import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
+import LegalPrivacy from './pages/LegalPrivacy';
+import LegalDataConsent from './pages/LegalDataConsent';
+import LegalUserAgreement from './pages/LegalUserAgreement';
+import LegalPublicOffer from './pages/LegalPublicOffer';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
@@ -305,6 +310,13 @@ function App() {
                 {/* Перенаправление на главную для несуществующих маршрутов */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              <Routes>
+                <Route path="/privacy" element={<LegalPrivacy />} />
+                <Route path="/data-consent" element={<LegalDataConsent />} />
+                <Route path="/user-agreement" element={<LegalUserAgreement />} />
+                <Route path="/public-offer" element={<LegalPublicOffer />} />
+              </Routes>
+              <Footer />
             </div>
           </Router>
         </UserProvider>
