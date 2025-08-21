@@ -371,7 +371,13 @@ router.put('/stats', [
 // Проверка/выдача бесплатного доступа к абакусу (по IP, 20 минут, один раз)
 router.post('/free-abacus', async (req, res) => {
   try {
-    const ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').toString();
+    const rawIp = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket?.remoteAddress || '').toString();
+    const firstIp = rawIp.split(',')[0].trim();
+    const ip = firstIp.replace('::ffff:', '');
+    const whitelist = (process.env.FREE_ACCESS_WHITELIST || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (ip && whitelist.includes(ip)) {
+      return res.json({ success: true, data: { allowed: true, reason: 'whitelist' } });
+    }
     if (!ip) {
       return res.status(400).json({ success: false, error: { message: 'Не удалось определить IP' } });
     }
