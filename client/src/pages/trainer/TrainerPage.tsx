@@ -351,6 +351,30 @@ const TrainerPage: React.FC = () => {
     };
   }, [clearCurrentTimeout]);
 
+  // Обновление таймера отображения примера
+  useEffect(() => {
+    if (!state.isTraining || state.currentStep !== 'showing' || !state.showProblem) return;
+
+    const startedAt = state.problemStartTime || Date.now();
+    setState(prev => ({
+      ...prev,
+      problemStartTime: startedAt,
+      timeLeft: Math.max(0, currentSettings.displaySpeed - (Date.now() - startedAt)),
+    }));
+
+    const intervalId = setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const remaining = Math.max(0, currentSettings.displaySpeed - elapsed);
+      setState(prev => ({ ...prev, timeLeft: remaining }));
+      if (remaining === 0) {
+        clearInterval(intervalId);
+        setState(prev => ({ ...prev, showProblem: false, currentStep: 'answering' }));
+      }
+    }, 50);
+
+    return () => clearInterval(intervalId);
+  }, [state.isTraining, state.currentStep, state.showProblem, state.problemStartTime, currentSettings.displaySpeed]);
+
   // Рендер текущей задачи
   const renderCurrentProblem = () => {
     if (!state.currentProblem) return null;

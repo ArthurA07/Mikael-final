@@ -11,7 +11,8 @@ const trainingRoutes = require('./routes/training');
 const app = express();
 
 // Middleware
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').filter(Boolean);
+app.use(cors(allowedOrigins.length ? { origin: allowedOrigins, credentials: true } : {}));
 app.use(express.json({ limit: '10mb' }));
 
 // Rate limiting
