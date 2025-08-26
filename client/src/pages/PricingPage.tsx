@@ -1,9 +1,14 @@
 import React from 'react';
+import { useSeo } from '../utils/seo';
 import { Box, Container, Typography, Paper, Button, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
 const PricingPage: React.FC = () => {
   const navigate = useNavigate();
+  useSeo({
+    title: 'Тарифы — Супер Математика',
+    description: 'Выберите подходящий тариф тренажёра ментальной арифметики. Доступ к тренажёрам и абакусу.',
+  });
   return (
     <Container maxWidth="md" sx={{ py: 6 }}>
       <Paper sx={{ p: 4, textAlign: 'center' }}>

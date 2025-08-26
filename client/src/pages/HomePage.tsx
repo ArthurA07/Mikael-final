@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSeo } from '../utils/seo';
 import {
   Box,
   Container,
@@ -24,6 +25,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const HomePage: React.FC = () => {
+  useSeo({
+    title: 'Супер Математика — тренажёр ментальной арифметики онлайн',
+    description: 'Прокачайте устный счёт: тренировки с абакусом, режимы для детей и взрослых.',
+  });
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));

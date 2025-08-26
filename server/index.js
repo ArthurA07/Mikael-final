@@ -16,6 +16,14 @@ const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').filter(Boolea
 app.use(cors(allowedOrigins.length ? { origin: allowedOrigins, credentials: true } : {}));
 app.use(express.json({ limit: '10mb' }));
 
+// Staging noindex header to prevent accidental indexing
+app.use((req, res, next) => {
+  if (process.env.STAGING === 'true') {
+    res.set('X-Robots-Tag', 'noindex, nofollow');
+  }
+  next();
+});
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -47,6 +55,14 @@ app.use((error, req, res, next) => {
 if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.join(__dirname, '../client/build');
   app.use(express.static(clientBuildPath));
+  // Override robots.txt on staging to disallow all crawlers
+  app.get('/robots.txt', (req, res, next) => {
+    if (process.env.STAGING === 'true') {
+      res.type('text/plain').send('User-agent: *\nDisallow: /');
+      return;
+    }
+    next();
+  });
   app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
