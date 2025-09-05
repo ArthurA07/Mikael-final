@@ -32,6 +32,7 @@ import {
 import { useUser } from '../../contexts/UserContext';
 import { useAuth } from '../../contexts/AuthContext';
 import TrainerAbacus from '../../components/abacus/TrainerAbacus';
+import { LawsMode, generateProblemFactory } from '../../utils/problemGenerator';
 
 // Типы данных
 interface Problem {
@@ -67,7 +68,7 @@ interface TrainerState {
 }
 
 // Дополнительные типы настроек тренажёра
-type LawsMode = 'none' | 'five' | 'ten' | 'both';
+// Тип импортируется из utils/problemGenerator
 
 // Настройки по умолчанию (вынесены за пределы компонента для избежания пересоздания)
 const DEFAULT_SETTINGS = {
@@ -134,81 +135,17 @@ const TrainerPage: React.FC = () => {
     initSettings();
   }, [isAuthenticated, trainerSettings]);
 
-  // Генерация случайного числа - стабильная функция
-  const generateRandomNumber = useCallback((range: number, min: number = 1): number => {
-    // Минимум включительно, максимум включительно
-    const span = range - min + 1;
-    return Math.floor(Math.random() * span) + min;
-  }, []);
-
-  // Генерация проблемы - стабилизированная
+  // Генерация проблемы через общий генератор
   const generateProblem = useCallback((): Problem => {
-    const numbers: number[] = [];
-    const minValue = currentSettings.numberRangeMin ?? 1;
-    const maxValue = currentSettings.numberRange;
-
-    // Поддержка режимов «законов» для сложения/вычитания (простая эвристика)
-    const useLaws = (currentSettings.lawsMode && currentSettings.lawsMode !== 'none') && (currentSettings.operations.includes('+') || currentSettings.operations.includes('-'));
-
-    if (useLaws && currentSettings.numbersCount >= 2 && maxValue <= 100) {
-      // Работает корректно для однозначных чисел (до 100). Для больших диапазонов оставляем случайную генерацию.
-      const baseMin = 1;
-      const baseMax = Math.min(9, maxValue);
-
-      const pickDigit = () => generateRandomNumber(baseMax, baseMin);
-      const d1 = pickDigit();
-      let d2 = pickDigit();
-
-      if (currentSettings.lawsMode === 'five' || currentSettings.lawsMode === 'both') {
-        // Подгоняем сумму последней цифры к 5, если возможно
-        const target = 5;
-        d2 = ((target - (d1 % 10) + 10) % 10) || 10; // чтобы не было нуля
-        if (d2 > baseMax) d2 = Math.max(baseMin, baseMax - ((d2 - baseMax) % 9));
-      } else if (currentSettings.lawsMode === 'ten') {
-        // Подгоняем сумму последней цифры к 10
-        const target = 10;
-        d2 = ((target - (d1 % 10) + 10) % 10) || 10;
-        if (d2 > baseMax) d2 = Math.max(baseMin, baseMax - ((d2 - baseMax) % 9));
-      }
-
-      numbers.push(d1, d2);
-      for (let i = 2; i < currentSettings.numbersCount; i++) {
-        numbers.push(generateRandomNumber(maxValue, minValue));
-      }
-    } else {
-      for (let i = 0; i < currentSettings.numbersCount; i++) {
-        numbers.push(generateRandomNumber(maxValue, minValue));
-      }
-    }
-    
-    const operation = currentSettings.operations[
-      Math.floor(Math.random() * currentSettings.operations.length)
-    ] as '+' | '-' | '*' | '/';
-    
-    let correctAnswer: number;
-    switch (operation) {
-      case '+':
-        correctAnswer = numbers.reduce((sum, num) => sum + num, 0);
-        break;
-      case '-':
-        correctAnswer = numbers.reduce((diff, num, index) => index === 0 ? num : diff - num);
-        break;
-      case '*':
-        correctAnswer = numbers.reduce((product, num) => product * num, 1);
-        break;
-      case '/':
-        // Для деления генерируем целое частное и делитель, затем вычисляем делимое
-        const quotient = generateRandomNumber(Math.min(currentSettings.numberRange, 100)); // Частное от 1 до 100
-        const divisor = generateRandomNumber(Math.min(currentSettings.numberRange, 100));  // Делитель от 1 до 100
-        const dividend = quotient * divisor; // Делимое = частное × делитель (всегда целое деление)
-        correctAnswer = quotient;
-        return { numbers: [dividend, divisor], operation, correctAnswer };
-      default:
-        correctAnswer = numbers.reduce((sum, num) => sum + num, 0);
-    }
-    
-    return { numbers, operation, correctAnswer };
-  }, [currentSettings.numbersCount, currentSettings.numberRange, currentSettings.operations, generateRandomNumber]);
+    const factory = generateProblemFactory({
+      numbersCount: currentSettings.numbersCount,
+      numberRange: currentSettings.numberRange,
+      numberRangeMin: currentSettings.numberRangeMin ?? 1,
+      operations: currentSettings.operations as ('+' | '-' | '*' | '/')[],
+      lawsMode: currentSettings.lawsMode as LawsMode,
+    });
+    return factory();
+  }, [currentSettings.numbersCount, currentSettings.numberRange, currentSettings.numberRangeMin, currentSettings.operations, currentSettings.lawsMode]);
 
   // Очистка таймера - стабильная функция
   const clearCurrentTimeout = useCallback(() => {
@@ -662,7 +599,14 @@ const TrainerPage: React.FC = () => {
               marks={[
                 { value: 1, label: '1' },
                 { value: 10, label: '10' },
+                { value: 20, label: '20' },
+                { value: 30, label: '30' },
+                { value: 40, label: '40' },
                 { value: 50, label: '50' },
+                { value: 60, label: '60' },
+                { value: 70, label: '70' },
+                { value: 80, label: '80' },
+                { value: 90, label: '90' },
                 { value: 100, label: '100' },
               ]}
               sx={{ mt: 2 }}
@@ -675,8 +619,14 @@ const TrainerPage: React.FC = () => {
               value={currentSettings.numbersCount}
               onChange={(_, value) => handleSettingsChange({ numbersCount: value as number })}
               min={2}
-              max={6}
-              marks
+              max={15}
+              step={1}
+              marks={[
+                { value: 2, label: '2' },
+                { value: 5, label: '5' },
+                { value: 10, label: '10' },
+                { value: 15, label: '15' },
+              ]}
               valueLabelDisplay="auto"
               sx={{ mt: 2 }}
             />

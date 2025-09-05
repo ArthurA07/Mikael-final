@@ -44,7 +44,7 @@ const userSchema = new mongoose.Schema({
       type: Number,
       default: 3,
       min: 1,
-      max: 10
+      max: 15
     },
     numberRange: {
       type: Number,
