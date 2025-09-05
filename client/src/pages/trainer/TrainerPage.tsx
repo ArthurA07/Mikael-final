@@ -64,7 +64,9 @@ interface TrainerState {
   timeLeft: number;
   problemStartTime: number;
   showSettings: boolean;
-  currentStep: 'waiting' | 'showing' | 'answering' | 'result';
+  currentStep: 'waiting' | 'prestart' | 'showing' | 'answering' | 'result' | 'result_pause';
+  sequentialIndex?: number;
+  answerTimeLeft?: number;
 }
 
 // Дополнительные типы настроек тренажёра
@@ -117,6 +119,8 @@ const TrainerPage: React.FC = () => {
     problemStartTime: 0,
     showSettings: false,
     currentStep: 'waiting',
+    sequentialIndex: 0,
+    answerTimeLeft: 0,
   });
 
   // Локальное состояние для настроек
@@ -198,19 +202,35 @@ const TrainerPage: React.FC = () => {
       isTraining: true,
       currentSession: session,
       currentProblem: problems[0],
-      currentStep: 'showing',
-      showProblem: true,
+      currentStep: (currentSettings as any).preStartPause > 0 ? 'prestart' : 'showing',
+      showProblem: (currentSettings as any).preStartPause > 0 ? false : true,
       problemStartTime: Date.now(),
       timeLeft: currentSettings.displaySpeed,
+      sequentialIndex: 0,
     }));
     
-    problemTimeoutRef.current = setTimeout(() => {
-      setState(prev => ({
-        ...prev,
-        showProblem: false,
-        currentStep: 'answering',
-      }));
-    }, currentSettings.displaySpeed);
+    const prePauseMs = ((currentSettings as any).preStartPause || 0) * 1000;
+    if (prePauseMs > 0) {
+      problemTimeoutRef.current = setTimeout(() => {
+        setState(prev => ({
+          ...prev,
+          currentStep: 'showing',
+          showProblem: true,
+          problemStartTime: Date.now(),
+          timeLeft: currentSettings.displaySpeed,
+          sequentialIndex: 0,
+        }));
+      }, prePauseMs);
+    } else {
+      problemTimeoutRef.current = setTimeout(() => {
+        setState(prev => ({
+          ...prev,
+          showProblem: false,
+          currentStep: 'answering',
+          answerTimeLeft: ((currentSettings as any).answerPause || 0) * 1000,
+        }));
+      }, currentSettings.displaySpeed);
+    }
     
   }, [generateProblem, currentSettings.displaySpeed, clearCurrentTimeout]);
 
@@ -363,29 +383,65 @@ const TrainerPage: React.FC = () => {
     };
   }, [clearCurrentTimeout]);
 
-  // Обновление таймера отображения примера
+  // Обновление таймера отображения примера (поддержка пошагового показа)
   useEffect(() => {
     if (!state.isTraining || state.currentStep !== 'showing' || !state.showProblem) return;
 
-    const startedAt = state.problemStartTime || Date.now();
-    setState(prev => ({
-      ...prev,
-      problemStartTime: startedAt,
-      timeLeft: Math.max(0, currentSettings.displaySpeed - (Date.now() - startedAt)),
-    }));
+    const numbers = state.currentProblem?.numbers || [];
+    const sequential = !!(currentSettings as any).sequentialDisplay;
 
+    if (sequential && numbers.length > 0) {
+      let localIndex = state.sequentialIndex || 0;
+      let stepStart = Date.now();
+      const tick = setInterval(() => {
+        const elapsed = Date.now() - stepStart;
+        const remaining = Math.max(0, currentSettings.displaySpeed - elapsed);
+        setState(prev => ({ ...prev, timeLeft: remaining }));
+        if (remaining === 0) {
+          localIndex += 1;
+          if (localIndex >= numbers.length) {
+            clearInterval(tick);
+            setState(prev => ({ ...prev, sequentialIndex: numbers.length - 1, showProblem: false, currentStep: 'answering', answerTimeLeft: ((currentSettings as any).answerPause || 0) * 1000 }));
+          } else {
+            stepStart = Date.now();
+            setState(prev => ({ ...prev, sequentialIndex: localIndex, timeLeft: currentSettings.displaySpeed }));
+          }
+        }
+      }, 50);
+      return () => clearInterval(tick);
+    }
+
+    // Обычный режим: показываем всю строку
+    const startedAt = Date.now();
+    setState(prev => ({ ...prev, problemStartTime: startedAt, timeLeft: currentSettings.displaySpeed }));
     const intervalId = setInterval(() => {
       const elapsed = Date.now() - startedAt;
       const remaining = Math.max(0, currentSettings.displaySpeed - elapsed);
       setState(prev => ({ ...prev, timeLeft: remaining }));
       if (remaining === 0) {
         clearInterval(intervalId);
-        setState(prev => ({ ...prev, showProblem: false, currentStep: 'answering' }));
+        setState(prev => ({ ...prev, showProblem: false, currentStep: 'answering', answerTimeLeft: ((currentSettings as any).answerPause || 0) * 1000 }));
       }
     }, 50);
-
     return () => clearInterval(intervalId);
-  }, [state.isTraining, state.currentStep, state.showProblem, state.problemStartTime, currentSettings.displaySpeed]);
+  }, [state.isTraining, state.currentStep, state.showProblem, state.currentProblem, state.sequentialIndex, currentSettings.displaySpeed, currentSettings]);
+
+  // Таймер на ввод ответа: авто-отправка, когда время вышло
+  useEffect(() => {
+    if (!state.isTraining || state.currentStep !== 'answering') return;
+    const total = ((currentSettings as any).answerPause || 0) * 1000;
+    if (total <= 0) return;
+    const start = Date.now();
+    const t = setInterval(() => {
+      const remain = Math.max(0, total - (Date.now() - start));
+      setState(prev => ({ ...prev, answerTimeLeft: remain }));
+      if (remain === 0) {
+        clearInterval(t);
+        submitAnswer();
+      }
+    }, 100);
+    return () => clearInterval(t);
+  }, [state.isTraining, state.currentStep, currentSettings, submitAnswer]);
 
   // Рендер текущей задачи
   const renderCurrentProblem = () => {
@@ -454,8 +510,19 @@ const TrainerPage: React.FC = () => {
             ) : (
               (currentSettings as any).sequentialDisplay ? (
                 <Box sx={{ mb: 3 }}>
-                  {numbers.map((num, idx) => (
-                    <Typography key={idx} variant="h2" sx={{ fontWeight: 'bold', color: theme.palette.primary.main, mb: 1 }}>
+                  {numbers.slice(0, (state.sequentialIndex || 0) + 1).map((num, idx) => (
+                    <Typography
+                      key={idx}
+                      variant="h2"
+                      sx={{
+                        fontWeight: 'bold',
+                        color: (currentSettings as any).randomColor ? `hsl(${(idx * 73) % 360} 80% 50%)` : theme.palette.primary.main,
+                        mb: 1,
+                        position: (currentSettings as any).randomPosition ? 'relative' : 'static',
+                        left: (currentSettings as any).randomPosition ? `${(idx % 3 - 1) * 10}px` : undefined,
+                        transform: `scale(${(currentSettings as any).fontScale || 1})`,
+                      }}
+                    >
                       {idx === 0 ? num : `${operation} ${num}`}
                     </Typography>
                   ))}
@@ -466,7 +533,10 @@ const TrainerPage: React.FC = () => {
                   sx={{ 
                     mb: 3,
                     fontWeight: 'bold',
-                    color: theme.palette.primary.main,
+                    color: (currentSettings as any).randomColor ? `hsl(${((state.currentSession?.currentProblemIndex || 0) * 53) % 360} 80% 50%)` : theme.palette.primary.main,
+                    position: (currentSettings as any).randomPosition ? 'relative' : 'static',
+                    left: (currentSettings as any).randomPosition ? `${(((state.currentSession?.currentProblemIndex || 0) % 3) - 1) * 10}px` : undefined,
+                    transform: `scale(${(currentSettings as any).fontScale || 1})`,
                   }}
                 >
                   {numbers.join(` ${operation} `)}
