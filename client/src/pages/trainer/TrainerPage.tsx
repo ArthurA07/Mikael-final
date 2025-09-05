@@ -608,7 +608,7 @@ const TrainerPage: React.FC = () => {
     <Dialog 
       open={state.showSettings} 
       onClose={() => setState(prev => ({ ...prev, showSettings: false }))}
-      maxWidth="sm"
+      maxWidth="md"
       fullWidth
     >
       <DialogTitle>Настройки тренажёра</DialogTitle>
