@@ -66,14 +66,24 @@ interface TrainerState {
   currentStep: 'waiting' | 'showing' | 'answering' | 'result';
 }
 
+// Дополнительные типы настроек тренажёра
+type LawsMode = 'none' | 'five' | 'ten' | 'both';
+
 // Настройки по умолчанию (вынесены за пределы компонента для избежания пересоздания)
 const DEFAULT_SETTINGS = {
   numbersCount: 3,
+  // Верхняя граница диапазона
   numberRange: 10,
+  // Нижняя граница диапазона (для варианта 1000–1 000 000)
+  numberRangeMin: 1,
   operations: ['+'],
   displaySpeed: 2000,
   displayMode: 'digits' as 'digits' | 'abacus',
   soundEnabled: true,
+  // Количество примеров в сессии
+  totalProblems: 10,
+  // Режим законов (5/10/оба/стандарт)
+  lawsMode: 'none' as LawsMode,
 };
 
 const TrainerPage: React.FC = () => {
@@ -125,15 +135,50 @@ const TrainerPage: React.FC = () => {
   }, [isAuthenticated, trainerSettings]);
 
   // Генерация случайного числа - стабильная функция
-  const generateRandomNumber = useCallback((range: number): number => {
-    return Math.floor(Math.random() * range) + 1;
+  const generateRandomNumber = useCallback((range: number, min: number = 1): number => {
+    // Минимум включительно, максимум включительно
+    const span = range - min + 1;
+    return Math.floor(Math.random() * span) + min;
   }, []);
 
   // Генерация проблемы - стабилизированная
   const generateProblem = useCallback((): Problem => {
     const numbers: number[] = [];
-    for (let i = 0; i < currentSettings.numbersCount; i++) {
-      numbers.push(generateRandomNumber(currentSettings.numberRange));
+    const minValue = currentSettings.numberRangeMin ?? 1;
+    const maxValue = currentSettings.numberRange;
+
+    // Поддержка режимов «законов» для сложения/вычитания (простая эвристика)
+    const useLaws = (currentSettings.lawsMode && currentSettings.lawsMode !== 'none') && (currentSettings.operations.includes('+') || currentSettings.operations.includes('-'));
+
+    if (useLaws && currentSettings.numbersCount >= 2 && maxValue <= 100) {
+      // Работает корректно для однозначных чисел (до 100). Для больших диапазонов оставляем случайную генерацию.
+      const baseMin = 1;
+      const baseMax = Math.min(9, maxValue);
+
+      const pickDigit = () => generateRandomNumber(baseMax, baseMin);
+      const d1 = pickDigit();
+      let d2 = pickDigit();
+
+      if (currentSettings.lawsMode === 'five' || currentSettings.lawsMode === 'both') {
+        // Подгоняем сумму последней цифры к 5, если возможно
+        const target = 5;
+        d2 = ((target - (d1 % 10) + 10) % 10) || 10; // чтобы не было нуля
+        if (d2 > baseMax) d2 = Math.max(baseMin, baseMax - ((d2 - baseMax) % 9));
+      } else if (currentSettings.lawsMode === 'ten') {
+        // Подгоняем сумму последней цифры к 10
+        const target = 10;
+        d2 = ((target - (d1 % 10) + 10) % 10) || 10;
+        if (d2 > baseMax) d2 = Math.max(baseMin, baseMax - ((d2 - baseMax) % 9));
+      }
+
+      numbers.push(d1, d2);
+      for (let i = 2; i < currentSettings.numbersCount; i++) {
+        numbers.push(generateRandomNumber(maxValue, minValue));
+      }
+    } else {
+      for (let i = 0; i < currentSettings.numbersCount; i++) {
+        numbers.push(generateRandomNumber(maxValue, minValue));
+      }
     }
     
     const operation = currentSettings.operations[
@@ -178,7 +223,8 @@ const TrainerPage: React.FC = () => {
     clearCurrentTimeout();
     
     const problems: Problem[] = [];
-    for (let i = 0; i < 10; i++) {
+    const total = Math.max(1, Math.min(100, currentSettings.totalProblems ?? 10));
+    for (let i = 0; i < total; i++) {
       problems.push(generateProblem());
     }
     
@@ -333,7 +379,18 @@ const TrainerPage: React.FC = () => {
     // Сохраняем настройки
     if (isAuthenticated && updateTrainerSettings) {
       try {
-        await updateTrainerSettings(newSettings);
+        // Отправляем на сервер только поддерживаемые ключи схемой пользователя
+        const serverAllowedKeys: (keyof typeof currentSettings)[] = ['numbersCount', 'numberRange', 'operations', 'displaySpeed', 'displayMode'];
+        const payload: Partial<typeof currentSettings> = {};
+        serverAllowedKeys.forEach((k) => {
+          if (k in newSettings) {
+            // @ts-expect-error индексный доступ к частичным данным
+            payload[k] = newSettings[k];
+          }
+        });
+        if (Object.keys(payload).length > 0) {
+          await updateTrainerSettings(payload);
+        }
       } catch (error) {
         console.warn('Не удалось сохранить настройки на сервере, используем localStorage:', error);
         localStorage.setItem('trainerSettings', JSON.stringify(updatedSettings));
@@ -592,6 +649,26 @@ const TrainerPage: React.FC = () => {
       <DialogTitle>Настройки тренажёра</DialogTitle>
       <DialogContent>
         <Stack spacing={3} sx={{ mt: 2 }}>
+          {/* Количество примеров */}
+          <FormControl fullWidth>
+            <FormLabel>Количество примеров: {currentSettings.totalProblems}</FormLabel>
+            <Slider
+              value={currentSettings.totalProblems}
+              onChange={(_, value) => handleSettingsChange({ totalProblems: value as number })}
+              min={1}
+              max={100}
+              step={1}
+              valueLabelDisplay="auto"
+              marks={[
+                { value: 1, label: '1' },
+                { value: 10, label: '10' },
+                { value: 50, label: '50' },
+                { value: 100, label: '100' },
+              ]}
+              sx={{ mt: 2 }}
+            />
+          </FormControl>
+
           <FormControl fullWidth>
             <FormLabel>Количество чисел: {currentSettings.numbersCount}</FormLabel>
             <Slider
@@ -608,15 +685,33 @@ const TrainerPage: React.FC = () => {
           <FormControl fullWidth>
             <FormLabel>Диапазон чисел</FormLabel>
             <Select
-              value={currentSettings.numberRange}
-              onChange={(e) => handleSettingsChange({ numberRange: e.target.value as number })}
+              value={`${currentSettings.numberRange}:${currentSettings.numberRangeMin}`}
+              onChange={(e) => {
+                const [maxStr, minStr] = String(e.target.value).split(':');
+                handleSettingsChange({ numberRange: parseInt(maxStr, 10), numberRangeMin: parseInt(minStr, 10) });
+              }}
             >
-              <MenuItem value={10}>1-10</MenuItem>
-              <MenuItem value={100}>1-100</MenuItem>
-              <MenuItem value={1000}>1-1000</MenuItem>
+              <MenuItem value={`10:1`}>1-10</MenuItem>
+              <MenuItem value={`100:1`}>1-100</MenuItem>
+              <MenuItem value={`1000:1`}>1-1000</MenuItem>
+              <MenuItem value={`1000000:1000`}>1000-1,000,000</MenuItem>
             </Select>
           </FormControl>
           
+          {/* Режим законов */}
+          <FormControl fullWidth>
+            <FormLabel>Режим законов</FormLabel>
+            <Select
+              value={currentSettings.lawsMode}
+              onChange={(e) => handleSettingsChange({ lawsMode: e.target.value as LawsMode })}
+            >
+              <MenuItem value="none">Стандартные примеры</MenuItem>
+              <MenuItem value="five">Законы на 5</MenuItem>
+              <MenuItem value="ten">Законы на 10</MenuItem>
+              <MenuItem value="both">Законы на 5 и 10</MenuItem>
+            </Select>
+          </FormControl>
+
           <FormControl fullWidth>
             <FormLabel>Скорость показа: {currentSettings.displaySpeed}мс</FormLabel>
             <Slider
@@ -627,7 +722,10 @@ const TrainerPage: React.FC = () => {
               step={100}
               marks={[
                 { value: 500, label: '0.5с' },
+                { value: 1000, label: '1с' },
                 { value: 2000, label: '2с' },
+                { value: 3000, label: '3с' },
+                { value: 4000, label: '4с' },
                 { value: 5000, label: '5с' },
               ]}
               valueLabelDisplay="auto"
