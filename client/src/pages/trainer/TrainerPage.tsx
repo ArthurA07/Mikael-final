@@ -85,6 +85,20 @@ const DEFAULT_SETTINGS = {
   totalProblems: 10,
   // Режим законов (5/10/оба/стандарт)
   lawsMode: 'none' as LawsMode,
+  // Разрядности (опционально)
+  multiplyDigits1: undefined as number | undefined,
+  multiplyDigits2: undefined as number | undefined,
+  divisionDividendDigits: undefined as number | undefined,
+  divisionDivisorDigits: undefined as number | undefined,
+  // Паузы (секунды)
+  preStartPause: 0,
+  answerPause: 0,
+  resultPause: 0,
+  // Визуальные настройки
+  fontScale: 1,
+  randomPosition: false,
+  randomColor: false,
+  sequentialDisplay: false,
 };
 
 const TrainerPage: React.FC = () => {
@@ -143,6 +157,10 @@ const TrainerPage: React.FC = () => {
       numberRangeMin: currentSettings.numberRangeMin ?? 1,
       operations: currentSettings.operations as ('+' | '-' | '*' | '/')[],
       lawsMode: currentSettings.lawsMode as LawsMode,
+      multiplyDigits1: currentSettings.multiplyDigits1 as any,
+      multiplyDigits2: currentSettings.multiplyDigits2 as any,
+      divisionDividendDigits: currentSettings.divisionDividendDigits as any,
+      divisionDivisorDigits: currentSettings.divisionDivisorDigits as any,
     });
     return factory();
   }, [currentSettings.numbersCount, currentSettings.numberRange, currentSettings.numberRangeMin, currentSettings.operations, currentSettings.lawsMode]);
@@ -434,16 +452,26 @@ const TrainerPage: React.FC = () => {
                 </Typography>
               </Box>
             ) : (
-              <Typography 
-                variant="h2" 
-                sx={{ 
-                  mb: 3,
-                  fontWeight: 'bold',
-                  color: theme.palette.primary.main,
-                }}
-              >
-                {numbers.join(` ${operation} `)}
-              </Typography>
+              (currentSettings as any).sequentialDisplay ? (
+                <Box sx={{ mb: 3 }}>
+                  {numbers.map((num, idx) => (
+                    <Typography key={idx} variant="h2" sx={{ fontWeight: 'bold', color: theme.palette.primary.main, mb: 1 }}>
+                      {idx === 0 ? num : `${operation} ${num}`}
+                    </Typography>
+                  ))}
+                </Box>
+              ) : (
+                <Typography 
+                  variant="h2" 
+                  sx={{ 
+                    mb: 3,
+                    fontWeight: 'bold',
+                    color: theme.palette.primary.main,
+                  }}
+                >
+                  {numbers.join(` ${operation} `)}
+                </Typography>
+              )
             )}
             
             <LinearProgress 
@@ -586,6 +614,58 @@ const TrainerPage: React.FC = () => {
       <DialogTitle>Настройки тренажёра</DialogTitle>
       <DialogContent>
         <Stack spacing={3} sx={{ mt: 2 }}>
+          {/* Разрядности для умножения/деления */}
+          <Box>
+            <FormLabel>Разрядности (для умножения/деления)</FormLabel>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 1 }}>
+              <FormControl fullWidth>
+                <FormLabel>Разрядность первого множителя</FormLabel>
+                <Select
+                  value={(currentSettings as any).multiplyDigits1 ?? ''}
+                  onChange={(e) => handleSettingsChange({ multiplyDigits1: (e.target.value || undefined) as any })}
+                  displayEmpty
+                >
+                  <MenuItem value="">Авто</MenuItem>
+                  {[1,2,3].map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <FormLabel>Разрядность второго множителя</FormLabel>
+                <Select
+                  value={(currentSettings as any).multiplyDigits2 ?? ''}
+                  onChange={(e) => handleSettingsChange({ multiplyDigits2: (e.target.value || undefined) as any })}
+                  displayEmpty
+                >
+                  <MenuItem value="">Авто</MenuItem>
+                  {[1,2,3].map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Stack>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
+              <FormControl fullWidth>
+                <FormLabel>Разрядность делимого</FormLabel>
+                <Select
+                  value={(currentSettings as any).divisionDividendDigits ?? ''}
+                  onChange={(e) => handleSettingsChange({ divisionDividendDigits: (e.target.value || undefined) as any })}
+                  displayEmpty
+                >
+                  <MenuItem value="">Авто</MenuItem>
+                  {[1,2,3,4,5,6].map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <FormLabel>Разрядность делителя</FormLabel>
+                <Select
+                  value={(currentSettings as any).divisionDivisorDigits ?? ''}
+                  onChange={(e) => handleSettingsChange({ divisionDivisorDigits: (e.target.value || undefined) as any })}
+                  displayEmpty
+                >
+                  <MenuItem value="">Авто</MenuItem>
+                  {[1,2,3,4].map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Stack>
+          </Box>
           {/* Количество примеров */}
           <FormControl fullWidth>
             <FormLabel>Количество примеров: {currentSettings.totalProblems}</FormLabel>
@@ -682,6 +762,44 @@ const TrainerPage: React.FC = () => {
               sx={{ mt: 2 }}
             />
           </FormControl>
+
+          {/* Паузы */}
+          <FormControl fullWidth>
+            <FormLabel>Пауза перед стартом: {(currentSettings as any).preStartPause || 0}с</FormLabel>
+            <Slider
+              value={(currentSettings as any).preStartPause || 0}
+              onChange={(_, value) => handleSettingsChange({ preStartPause: value as number })}
+              min={0}
+              max={10}
+              step={1}
+              marks
+              valueLabelDisplay="auto"
+            />
+          </FormControl>
+          <FormControl fullWidth>
+            <FormLabel>Пауза для ввода ответа: {(currentSettings as any).answerPause || 0}с</FormLabel>
+            <Slider
+              value={(currentSettings as any).answerPause || 0}
+              onChange={(_, value) => handleSettingsChange({ answerPause: value as number })}
+              min={0}
+              max={30}
+              step={1}
+              marks
+              valueLabelDisplay="auto"
+            />
+          </FormControl>
+          <FormControl fullWidth>
+            <FormLabel>Пауза показа результата: {(currentSettings as any).resultPause || 0}с</FormLabel>
+            <Slider
+              value={(currentSettings as any).resultPause || 0}
+              onChange={(_, value) => handleSettingsChange({ resultPause: value as number })}
+              min={0}
+              max={10}
+              step={1}
+              marks
+              valueLabelDisplay="auto"
+            />
+          </FormControl>
           
           <Box>
             <FormLabel>Операции:</FormLabel>
@@ -702,6 +820,54 @@ const TrainerPage: React.FC = () => {
                 />
               ))}
             </Stack>
+          </Box>
+          
+          {/* Визуальные опции */}
+          <Box>
+            <FormLabel>Визуализация</FormLabel>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 1 }}>
+              <FormControl fullWidth>
+                <FormLabel>Размер шрифта</FormLabel>
+                <Select
+                  value={(currentSettings as any).fontScale ?? 1}
+                  onChange={(e) => handleSettingsChange({ fontScale: e.target.value as number })}
+                >
+                  {[1,1.25,1.5,1.75,2].map(s => (
+                    <MenuItem key={s} value={s}>{s}x</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <FormLabel>Случайная позиция</FormLabel>
+                <Select
+                  value={(currentSettings as any).randomPosition ? 'yes' : 'no'}
+                  onChange={(e) => handleSettingsChange({ randomPosition: e.target.value === 'yes' })}
+                >
+                  <MenuItem value="no">Нет</MenuItem>
+                  <MenuItem value="yes">Да</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <FormLabel>Случайный цвет</FormLabel>
+                <Select
+                  value={(currentSettings as any).randomColor ? 'yes' : 'no'}
+                  onChange={(e) => handleSettingsChange({ randomColor: e.target.value === 'yes' })}
+                >
+                  <MenuItem value="no">Нет</MenuItem>
+                  <MenuItem value="yes">Да</MenuItem>
+                </Select>
+              </FormControl>
+            </Stack>
+            <FormControl sx={{ mt: 2 }}>
+              <FormLabel>Показывать действия последовательно</FormLabel>
+              <Select
+                value={(currentSettings as any).sequentialDisplay ? 'yes' : 'no'}
+                onChange={(e) => handleSettingsChange({ sequentialDisplay: e.target.value === 'yes' })}
+              >
+                <MenuItem value="no">Нет</MenuItem>
+                <MenuItem value="yes">Да</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
           
           <FormControl>
