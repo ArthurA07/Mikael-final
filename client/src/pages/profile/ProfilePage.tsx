@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, TextField, Button, Stack, Alert, Avatar, Divider } from '@mui/material';
+import { Box, Typography, Paper, TextField, Button, Stack, Alert, Avatar, Divider, Tooltip, Collapse } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -15,6 +16,12 @@ const ProfilePage: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [pwdMsg, setPwdMsg] = useState<string | null>(null);
   const [pwdErr, setPwdErr] = useState<string | null>(null);
+  const [pwdOpen, setPwdOpen] = useState(false);
+
+  // Набор готовых детских аватаров (DiceBear, публичные ссылки)
+  const presetAvatars: string[] = Array.from({ length: 20 }).map((_, i) =>
+    `https://api.dicebear.com/7.x/big-smile/svg?seed=kid${i + 1}&radius=50&backgroundType=gradientLinear&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc`
+  );
 
   useEffect(() => {
     if (user) {
@@ -105,30 +112,51 @@ const ProfilePage: React.FC = () => {
         </form>
 
         <Divider sx={{ my: 3 }} />
+        <Typography variant="h6" sx={{ mb: 1 }}>Выбрать готовый аватар</Typography>
+        <Grid container spacing={1} sx={{ mb: 2 }} columns={12}>
+          {presetAvatars.map((url, idx) => (
+            <Grid item xs={3} sm={2} md={2} key={idx}>
+              <Tooltip title="Выбрать">
+                <Avatar
+                  src={url}
+                  sx={{ width: 56, height: 56, cursor: 'pointer', border: avatar === url ? '2px solid #667eea' : '2px solid transparent' }}
+                  onClick={() => setAvatar(url)}
+                />
+              </Tooltip>
+            </Grid>
+          ))}
+        </Grid>
+
+        <Divider sx={{ my: 3 }} />
         <Typography variant="h6" sx={{ mb: 1 }}>Сменить пароль</Typography>
-        {pwdMsg && <Alert severity="success" sx={{ mb: 2 }}>{pwdMsg}</Alert>}
-        {pwdErr && <Alert severity="error" sx={{ mb: 2 }}>{pwdErr}</Alert>}
-        <form onSubmit={onChangePassword}>
-          <Stack spacing={2}>
-            <TextField
-              label="Текущий пароль"
-              type="password"
-              value={currentPassword}
-              onChange={e => setCurrentPassword(e.target.value)}
-              required
-            />
-            <TextField
-              label="Новый пароль"
-              type="password"
-              value={newPassword}
-              onChange={e => setNewPassword(e.target.value)}
-              required
-              inputProps={{ minLength: 6 }}
-              helperText="Минимум 6 символов"
-            />
-            <Button type="submit" variant="outlined">Обновить пароль</Button>
-          </Stack>
-        </form>
+        <Button variant="outlined" size="small" sx={{ mb: 2 }} onClick={() => setPwdOpen(v => !v)}>
+          {pwdOpen ? 'Скрыть' : 'Открыть'} форму
+        </Button>
+        <Collapse in={pwdOpen}>
+          {pwdMsg && <Alert severity="success" sx={{ mb: 2 }}>{pwdMsg}</Alert>}
+          {pwdErr && <Alert severity="error" sx={{ mb: 2 }}>{pwdErr}</Alert>}
+          <form onSubmit={onChangePassword}>
+            <Stack spacing={2}>
+              <TextField
+                label="Текущий пароль"
+                type="password"
+                value={currentPassword}
+                onChange={e => setCurrentPassword(e.target.value)}
+                required
+              />
+              <TextField
+                label="Новый пароль"
+                type="password"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                required
+                inputProps={{ minLength: 6 }}
+                helperText="Минимум 6 символов"
+              />
+              <Button type="submit" variant="outlined">Обновить пароль</Button>
+            </Stack>
+          </form>
+        </Collapse>
       </Paper>
     </Box>
   );
