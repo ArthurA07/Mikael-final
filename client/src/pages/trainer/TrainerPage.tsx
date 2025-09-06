@@ -310,6 +310,16 @@ const TrainerPage: React.FC = () => {
               metrics: { totalTime },
               sessionType: 'practice',
             });
+            // Автовыдача простых достижений
+            try {
+              const totalAll = (user.stats?.totalExercises || 0) + updatedProblems.length;
+              if (correctAnswers === updatedProblems.length) {
+                await addAchievement?.({ id: 'perfect_session', name: 'Идеальная сессия', description: 'Все ответы верны', icon: '🎯' });
+              }
+              if (totalAll >= 10) {
+                await addAchievement?.({ id: 'ten_exercises', name: '10 примеров', description: 'Решено 10 примеров', icon: '🔟' });
+              }
+            } catch {}
           } catch (e) {
             console.warn('Не удалось сохранить историю тренировки:', e);
           }

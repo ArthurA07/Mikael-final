@@ -11,7 +11,40 @@ const ProfilePage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/shapes/svg?seed=abacus&shape1=rectangle&shape2=circle&shape3=rectangle&backgroundType=gradientLinear&backgroundColor=d1d4f9,ffd5dc';
+  // Статичный аватар со счётами (inline SVG)
+  const DEFAULT_AVATAR =
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+        <defs>
+          <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stop-color="#ffd5dc"/>
+            <stop offset="100%" stop-color="#d1d4f9"/>
+          </linearGradient>
+        </defs>
+        <rect width="128" height="128" rx="16" fill="url(#bg)"/>
+        <rect x="20" y="16" width="88" height="96" rx="8" fill="#8B5E3C"/>
+        <rect x="26" y="24" width="76" height="80" rx="4" fill="#C08A5C"/>
+        <!-- перекладины -->
+        <g stroke="#6D3F24" stroke-width="4">
+          <line x1="34" y1="40" x2="94" y2="40"/>
+          <line x1="34" y1="60" x2="94" y2="60"/>
+          <line x1="34" y1="80" x2="94" y2="80"/>
+        </g>
+        <!-- косточки -->
+        <g>
+          <circle cx="46" cy="40" r="7" fill="#FF7F50"/>
+          <circle cx="66" cy="40" r="7" fill="#FF7F50"/>
+          <circle cx="86" cy="40" r="7" fill="#FF7F50"/>
+          <circle cx="46" cy="60" r="7" fill="#4ECDC4"/>
+          <circle cx="66" cy="60" r="7" fill="#4ECDC4"/>
+          <circle cx="86" cy="60" r="7" fill="#4ECDC4"/>
+          <circle cx="46" cy="80" r="7" fill="#FFD93D"/>
+          <circle cx="66" cy="80" r="7" fill="#FFD93D"/>
+          <circle cx="86" cy="80" r="7" fill="#FFD93D"/>
+        </g>
+      </svg>
+    `);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [pwdMsg, setPwdMsg] = useState<string | null>(null);
