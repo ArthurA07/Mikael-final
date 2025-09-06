@@ -222,14 +222,7 @@ const TrainerPage: React.FC = () => {
         }));
       }, prePauseMs);
     } else {
-      problemTimeoutRef.current = setTimeout(() => {
-        setState(prev => ({
-          ...prev,
-          showProblem: false,
-          currentStep: 'answering',
-          answerTimeLeft: ((currentSettings as any).answerPause || 0) * 1000,
-        }));
-      }, currentSettings.displaySpeed);
+      // Без предварительной паузы просто начинаем показ; дальнейший переход управляется эффектом показа
     }
     
   }, [generateProblem, currentSettings.displaySpeed, clearCurrentTimeout]);
