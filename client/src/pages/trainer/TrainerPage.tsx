@@ -108,7 +108,7 @@ const TrainerPage: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { user, isAuthenticated } = useAuth();
-  const { trainerSettings, updateTrainerSettings, updateUserStats, addAchievement, userStats } = useUser();
+  const { trainerSettings, updateTrainerSettings, updateUserStats, addAchievement, userStats, refreshUserStats } = useUser();
   
   const [state, setState] = useState<TrainerState>({
     isTraining: false,
@@ -299,6 +299,8 @@ const TrainerPage: React.FC = () => {
             totalTime: (user.stats?.totalTime || 0) + totalTime,
             bestAccuracy: Math.max(user.stats?.bestAccuracy || 0, accuracy),
           });
+          // Обновляем агрегаты в контексте, чтобы виджет и /stats сразу увидели изменения
+          try { await refreshUserStats(); } catch {}
 
           // Сохраняем детальную историю в Training (бэкенд)
           try {
