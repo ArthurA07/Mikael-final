@@ -506,9 +506,10 @@ const TrainerPage: React.FC = () => {
                 </Typography>
               </Box>
             ) : (
-              (currentSettings as any).sequentialDisplay ? (
-                <Box sx={{ mb: 3 }}>
-                  {(() => {
+              <Box sx={{ mb: 3 }}>
+                {(() => {
+                  const sequential = !!(currentSettings as any).sequentialDisplay;
+                  if (sequential) {
                     const idx = state.sequentialIndex || 0;
                     const num = numbers[idx];
                     const text = idx === 0 ? String(num) : `${operation} ${num}`;
@@ -519,7 +520,6 @@ const TrainerPage: React.FC = () => {
                         sx={{
                           fontWeight: 'bold',
                           color: (currentSettings as any).randomColor ? `hsl(${(idx * 73) % 360} 80% 50%)` : theme.palette.primary.main,
-                          mb: 1,
                           position: (currentSettings as any).randomPosition ? 'relative' : 'static',
                           left: (currentSettings as any).randomPosition ? `${(idx % 3 - 1) * 10}px` : undefined,
                           transform: `scale(${(currentSettings as any).fontScale || 1})`,
@@ -528,23 +528,24 @@ const TrainerPage: React.FC = () => {
                         {text}
                       </Typography>
                     );
-                  })()}
-                </Box>
-              ) : (
-                <Typography 
-                  variant="h2" 
-                  sx={{ 
-                    mb: 3,
-                    fontWeight: 'bold',
-                    color: (currentSettings as any).randomColor ? `hsl(${((state.currentSession?.currentProblemIndex || 0) * 53) % 360} 80% 50%)` : theme.palette.primary.main,
-                    position: (currentSettings as any).randomPosition ? 'relative' : 'static',
-                    left: (currentSettings as any).randomPosition ? `${(((state.currentSession?.currentProblemIndex || 0) % 3) - 1) * 10}px` : undefined,
-                    transform: `scale(${(currentSettings as any).fontScale || 1})`,
-                  }}
-                >
-                  {numbers.join(` ${operation} `)}
-                </Typography>
-              )
+                  }
+                  // обычный режим — вся строка
+                  return (
+                    <Typography
+                      variant="h2"
+                      sx={{
+                        fontWeight: 'bold',
+                        color: (currentSettings as any).randomColor ? `hsl(${((state.currentSession?.currentProblemIndex || 0) * 53) % 360} 80% 50%)` : theme.palette.primary.main,
+                        position: (currentSettings as any).randomPosition ? 'relative' : 'static',
+                        left: (currentSettings as any).randomPosition ? `${(((state.currentSession?.currentProblemIndex || 0) % 3) - 1) * 10}px` : undefined,
+                        transform: `scale(${(currentSettings as any).fontScale || 1})`,
+                      }}
+                    >
+                      {numbers.join(` ${operation} `)}
+                    </Typography>
+                  );
+                })()}
+              </Box>
             )}
             
             <LinearProgress 
