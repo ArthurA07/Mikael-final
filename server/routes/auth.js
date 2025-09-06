@@ -174,6 +174,7 @@ router.put('/profile', protect, [
     .optional()
     .matches(/^(\+7|8)?[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}$/)
     .withMessage('Введите корректный номер телефона'),
+  body('avatar').optional().isString().withMessage('Ссылка на аватар должна быть строкой'),
   body('preferences.theme')
     .optional()
     .isIn(['light', 'dark'])
@@ -301,6 +302,7 @@ router.post('/forgot-password', [
     await user.save({ validateBeforeSave: false });
 
     const resetUrl = `${process.env.PUBLIC_APP_URL || 'https://mikael-final-1.onrender.com'}/reset-password?token=${resetTokenRaw}`;
+    console.log('[auth] reset-password link:', resetUrl);
 
     // Транспорт для почты (минимальный SMTP, можно заменить на любой сервис)
     const port = parseInt(process.env.SMTP_PORT || '587', 10);
