@@ -77,7 +77,7 @@ const StatsPage: React.FC = () => {
                 </Box>
               </Box>
               <Box sx={{ mt: 2 }}>
-                <Button component={RouterLink} to="/profile#history" variant="outlined">История тренировок</Button>
+                <Button component={RouterLink} to="/stats/history" variant="outlined">История тренировок</Button>
               </Box>
             </Paper>
           )}
