@@ -459,44 +459,41 @@ const TrainerPage: React.FC = () => {
                 <Typography variant="h6" sx={{ mb: 2, textAlign: 'center' }}>
                   Запомните числа на абакусе:
                 </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 2, maxWidth: '1000px', mx: 'auto' }}>
-                  {numbers.map((number, index) => (
-                    <React.Fragment key={index}>
-                      <Box sx={{ flex: '0 1 280px', minWidth: '200px' }}>
-                        <Typography variant="body1" sx={{ textAlign: 'center', mb: 1, fontWeight: 'bold' }}>
-                          Число {index + 1}
-                        </Typography>
-                        <TrainerAbacus 
-                          value={number} 
-                          showValue={false} 
-                        />
-                      </Box>
-                      
-                      {index < numbers.length - 1 && (
-                        <Box sx={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          minHeight: '200px',
-                          px: 2
-                        }}>
-                          <Typography 
-                            variant="h1" 
-                            sx={{ 
-                              fontSize: { xs: '3rem', md: '4rem' },
-                              fontWeight: 'bold',
-                              color: theme.palette.primary.main,
-                              textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
-                              userSelect: 'none'
-                            }}
-                          >
-                            {operation}
-                          </Typography>
+                {((currentSettings as any).sequentialDisplay ? (
+                  // последовательный показ на абакусе — только один текущий элемент
+                  (() => {
+                    const idx = state.sequentialIndex || 0;
+                    const number = numbers[idx];
+                    return (
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+                        {idx === 0 ? null : (
+                          <Typography variant="h1" sx={{ fontSize: { xs: '3rem', md: '4rem' }, fontWeight: 'bold', color: theme.palette.primary.main, userSelect: 'none' }}>{operation}</Typography>
+                        )}
+                        <Box sx={{ flex: '0 1 280px', minWidth: '200px' }}>
+                          <Typography variant="body1" sx={{ textAlign: 'center', mb: 1, fontWeight: 'bold' }}>Число {idx + 1}</Typography>
+                          <TrainerAbacus value={number} showValue={false} />
                         </Box>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </Box>
+                      </Box>
+                    );
+                  })()
+                ) : (
+                  // обычный режим — все числа
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 2, maxWidth: '1000px', mx: 'auto' }}>
+                    {numbers.map((number, index) => (
+                      <React.Fragment key={index}>
+                        <Box sx={{ flex: '0 1 280px', minWidth: '200px' }}>
+                          <Typography variant="body1" sx={{ textAlign: 'center', mb: 1, fontWeight: 'bold' }}>Число {index + 1}</Typography>
+                          <TrainerAbacus value={number} showValue={false} />
+                        </Box>
+                        {index < numbers.length - 1 && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px', px: 2 }}>
+                            <Typography variant="h1" sx={{ fontSize: { xs: '3rem', md: '4rem' }, fontWeight: 'bold', color: theme.palette.primary.main, textShadow: '2px 2px 4px rgba(0,0,0,0.3)', userSelect: 'none' }}>{operation}</Typography>
+                          </Box>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </Box>
+                ))}
                 <Typography variant="body1" sx={{ mt: 3, textAlign: 'center', fontWeight: 'bold', color: theme.palette.primary.main }}>
                   Операция: {operation}
                 </Typography>
