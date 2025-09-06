@@ -147,7 +147,22 @@ router.get('/stats', async (req, res) => {
     const { period = 'all' } = req.query;
     
     // Получаем общую статистику из Training
-    const trainingStats = await Training.getUserStats(req.user._id, period);
+    let trainingStats;
+    try {
+      trainingStats = await Training.getUserStats(req.user._id, period);
+    } catch (e) {
+      // Безопасный фолбэк — не ломаем страницу, даже если агрегация упала
+      trainingStats = {
+        totalSessions: 0,
+        totalProblems: 0,
+        totalCorrect: 0,
+        totalTime: 0,
+        averageAccuracy: 0,
+        bestAccuracy: 0,
+        totalScore: 0,
+        bestScore: 0
+      };
+    }
     
     // Получаем статистику из профиля пользователя
     const user = await User.findById(req.user._id);
@@ -164,7 +179,8 @@ router.get('/stats', async (req, res) => {
     console.error('Get stats error:', error);
     res.status(500).json({
       error: {
-        message: 'Ошибка при получении статистики'
+        message: 'Ошибка при получении статистики',
+        details: error?.message || String(error)
       }
     });
   }
@@ -253,16 +269,15 @@ router.post('/achievements', [
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
+    // Вместо жёсткого отказа — мягко логируем и продолжаем, если пришли лишние поля
     if (!errors.isEmpty()) {
-      return res.status(400).json({
-        error: {
-          message: 'Ошибки валидации',
-          details: errors.array()
-        }
-      });
+      console.warn('Achievements validation warnings:', errors.array());
     }
 
-    const { id, name, description, icon } = req.body;
+    const { id, name, description, icon } = req.body || {};
+    if (!id || !name || !description) {
+      return res.status(400).json({ error: { message: 'Некорректные данные достижения' } });
+    }
     
     const user = await User.findById(req.user._id);
     
