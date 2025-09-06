@@ -508,22 +508,27 @@ const TrainerPage: React.FC = () => {
             ) : (
               (currentSettings as any).sequentialDisplay ? (
                 <Box sx={{ mb: 3 }}>
-                  {numbers.slice(0, (state.sequentialIndex || 0) + 1).map((num, idx) => (
-                    <Typography
-                      key={idx}
-                      variant="h2"
-                      sx={{
-                        fontWeight: 'bold',
-                        color: (currentSettings as any).randomColor ? `hsl(${(idx * 73) % 360} 80% 50%)` : theme.palette.primary.main,
-                        mb: 1,
-                        position: (currentSettings as any).randomPosition ? 'relative' : 'static',
-                        left: (currentSettings as any).randomPosition ? `${(idx % 3 - 1) * 10}px` : undefined,
-                        transform: `scale(${(currentSettings as any).fontScale || 1})`,
-                      }}
-                    >
-                      {idx === 0 ? num : `${operation} ${num}`}
-                    </Typography>
-                  ))}
+                  {(() => {
+                    const idx = state.sequentialIndex || 0;
+                    const num = numbers[idx];
+                    const text = idx === 0 ? String(num) : `${operation} ${num}`;
+                    return (
+                      <Typography
+                        key={idx}
+                        variant="h2"
+                        sx={{
+                          fontWeight: 'bold',
+                          color: (currentSettings as any).randomColor ? `hsl(${(idx * 73) % 360} 80% 50%)` : theme.palette.primary.main,
+                          mb: 1,
+                          position: (currentSettings as any).randomPosition ? 'relative' : 'static',
+                          left: (currentSettings as any).randomPosition ? `${(idx % 3 - 1) * 10}px` : undefined,
+                          transform: `scale(${(currentSettings as any).fontScale || 1})`,
+                        }}
+                      >
+                        {text}
+                      </Typography>
+                    );
+                  })()}
                 </Box>
               ) : (
                 <Typography 
