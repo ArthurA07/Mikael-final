@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Box, Paper, TextField, Button, Typography, Stack, Alert } from '@mui/material';
+import { Box, Paper, TextField, Button, Typography, Stack, Alert, Link } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -63,6 +64,7 @@ const LoginPage: React.FC = () => {
               error={Boolean(fieldErrors.password)}
             />
             <Button type="submit" variant="contained" disabled={isLoading}>Войти</Button>
+            <Link component={RouterLink} to="/forgot-password" underline="hover">Забыли пароль?</Link>
           </Stack>
         </form>
       </Paper>
