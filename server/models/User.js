@@ -67,6 +67,18 @@ const userSchema = new mongoose.Schema({
       default: 'digits',
       enum: ['digits', 'abacus']
     },
+    // Новые настройки тренажёра
+    multiplyDigits1: { type: Number, min: 1, max: 6, default: undefined },
+    multiplyDigits2: { type: Number, min: 1, max: 6, default: undefined },
+    divisionDividendDigits: { type: Number, min: 1, max: 9, default: undefined },
+    divisionDivisorDigits: { type: Number, min: 1, max: 6, default: undefined },
+    preStartPause: { type: Number, min: 0, max: 60, default: 0 },
+    answerPause: { type: Number, min: 0, max: 120, default: 0 },
+    resultPause: { type: Number, min: 0, max: 60, default: 0 },
+    fontScale: { type: Number, min: 0.5, max: 3, default: 1 },
+    randomPosition: { type: Boolean, default: false },
+    randomColor: { type: Boolean, default: false },
+    sequentialDisplay: { type: Boolean, default: false },
     soundEnabled: {
       type: Boolean,
       default: true

@@ -84,6 +84,19 @@ router.put('/trainer-settings', [
     .optional()
     .isBoolean()
     .withMessage('randomFont должен быть булевым значением')
+  ,
+  // Новые поля
+  body('multiplyDigits1').optional().isInt({ min: 1, max: 6 }),
+  body('multiplyDigits2').optional().isInt({ min: 1, max: 6 }),
+  body('divisionDividendDigits').optional().isInt({ min: 1, max: 9 }),
+  body('divisionDivisorDigits').optional().isInt({ min: 1, max: 6 }),
+  body('preStartPause').optional().isInt({ min: 0, max: 60 }),
+  body('answerPause').optional().isInt({ min: 0, max: 120 }),
+  body('resultPause').optional().isInt({ min: 0, max: 60 }),
+  body('fontScale').optional().isFloat({ min: 0.5, max: 3 }),
+  body('randomPosition').optional().isBoolean(),
+  body('randomColor').optional().isBoolean(),
+  body('sequentialDisplay').optional().isBoolean()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);

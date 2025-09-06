@@ -355,7 +355,12 @@ const TrainerPage: React.FC = () => {
     if (isAuthenticated && updateTrainerSettings) {
       try {
         // Отправляем на сервер только поддерживаемые ключи схемой пользователя
-        const serverAllowedKeys: (keyof typeof currentSettings)[] = ['numbersCount', 'numberRange', 'operations', 'displaySpeed', 'displayMode'];
+        const serverAllowedKeys: (keyof typeof currentSettings)[] = [
+          'numbersCount', 'numberRange', 'operations', 'displaySpeed', 'displayMode',
+          // новые ключи, сохраняемые на сервер
+          'multiplyDigits1','multiplyDigits2','divisionDividendDigits','divisionDivisorDigits',
+          'preStartPause','answerPause','resultPause','fontScale','randomPosition','randomColor','sequentialDisplay'
+        ];
         const payload: Partial<typeof currentSettings> = {};
         serverAllowedKeys.forEach((k) => {
           if (k in newSettings) {
