@@ -40,6 +40,12 @@ const userSchema = new mongoose.Schema({
   },
   // Настройки тренажёра по умолчанию
   trainerSettings: {
+    totalProblems: {
+      type: Number,
+      default: 10,
+      min: 1,
+      max: 100
+    },
     numbersCount: {
       type: Number,
       default: 3,

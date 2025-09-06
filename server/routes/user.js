@@ -52,6 +52,10 @@ router.put('/trainer-settings', [
     .optional()
     .isInt({ min: 100, max: 10000 })
     .withMessage('Скорость отображения должна быть от 100 до 10000 мс'),
+  body('totalProblems')
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage('Количество примеров должно быть от 1 до 100'),
   body('displayMode')
     .optional()
     .isIn(['digits', 'abacus'])
