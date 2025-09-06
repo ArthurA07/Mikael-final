@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper, TextField, Button, Stack, Alert, Avatar, Divider, Tooltip, Collapse } from '@mui/material';
-import Grid from '@mui/material/Grid';
+// используем CSS grid вместо MUI Grid, чтобы избежать типовых несовместимостей
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -113,9 +113,18 @@ const ProfilePage: React.FC = () => {
 
         <Divider sx={{ my: 3 }} />
         <Typography variant="h6" sx={{ mb: 1 }}>Выбрать готовый аватар</Typography>
-        <Grid container spacing={1} sx={{ mb: 2 }} columns={12}>
+        <Box sx={{
+          mb: 2,
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: 'repeat(4, 56px)',
+            sm: 'repeat(6, 56px)',
+            md: 'repeat(8, 56px)'
+          },
+          gap: 1
+        }}>
           {presetAvatars.map((url, idx) => (
-            <Grid item xs={3} sm={2} md={2} key={idx}>
+            <Box key={idx} sx={{ width: 56, height: 56 }}>
               <Tooltip title="Выбрать">
                 <Avatar
                   src={url}
@@ -123,9 +132,9 @@ const ProfilePage: React.FC = () => {
                   onClick={() => setAvatar(url)}
                 />
               </Tooltip>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
 
         <Divider sx={{ my: 3 }} />
         <Typography variant="h6" sx={{ mb: 1 }}>Сменить пароль</Typography>
