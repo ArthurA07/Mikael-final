@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper, CircularProgress, Alert, Button } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../../contexts/AuthContext';
 
 const StatsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>(null);
+  const { isLoading, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const load = async () => {
@@ -21,8 +23,10 @@ const StatsPage: React.FC = () => {
         setLoading(false);
       }
     };
-    load();
-  }, []);
+    if (!isLoading && isAuthenticated) {
+      load();
+    }
+  }, [isLoading, isAuthenticated]);
 
   return (
     <Box p={3}>
@@ -71,6 +75,9 @@ const StatsPage: React.FC = () => {
                   <Typography color="text.secondary">Лучший счёт</Typography>
                   <Typography variant="h5">{data.training.bestScore ?? 0}</Typography>
                 </Box>
+              </Box>
+              <Box sx={{ mt: 2 }}>
+                <Button component={RouterLink} to="/profile#history" variant="outlined">История тренировок</Button>
               </Box>
             </Paper>
           )}
