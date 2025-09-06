@@ -11,7 +11,7 @@ const ProfilePage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/big-smile/svg?seed=kid&radius=50&backgroundType=gradientLinear&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc';
+  const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/shapes/svg?seed=abacus&shape1=rectangle&shape2=circle&shape3=rectangle&backgroundType=gradientLinear&backgroundColor=d1d4f9,ffd5dc';
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [pwdMsg, setPwdMsg] = useState<string | null>(null);
@@ -87,7 +87,6 @@ const ProfilePage: React.FC = () => {
             {/* Статичный аватар для всех пользователей */}
             <Stack direction="row" spacing={2} alignItems="center">
               <Avatar src={DEFAULT_AVATAR} sx={{ width: 64, height: 64 }} />
-              <Typography color="text.secondary">Аватар по умолчанию</Typography>
             </Stack>
             <TextField 
               label="Имя" 
