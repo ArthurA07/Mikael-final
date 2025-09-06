@@ -178,6 +178,11 @@ const TrainerPage: React.FC = () => {
     }
   }, []);
 
+  // Локально меняем настройки (без запроса на сервер) — для плавной работы слайдеров
+  const setLocalOnly = useCallback((partial: Partial<typeof currentSettings>) => {
+    setLocalSettings(prev => ({ ...prev, ...partial }));
+  }, []);
+
   // Начало тренировки
   const startTraining = useCallback(() => {
     clearCurrentTimeout();
@@ -740,7 +745,8 @@ const TrainerPage: React.FC = () => {
             <FormLabel>Количество примеров: {currentSettings.totalProblems}</FormLabel>
             <Slider
               value={currentSettings.totalProblems}
-              onChange={(_, value) => handleSettingsChange({ totalProblems: value as number })}
+              onChange={(_, value) => setLocalOnly({ totalProblems: value as number })}
+              onChangeCommitted={(_, value) => handleSettingsChange({ totalProblems: value as number })}
               min={1}
               max={100}
               step={1}
@@ -766,7 +772,8 @@ const TrainerPage: React.FC = () => {
             <FormLabel>Количество чисел: {currentSettings.numbersCount}</FormLabel>
             <Slider
               value={currentSettings.numbersCount}
-              onChange={(_, value) => handleSettingsChange({ numbersCount: value as number })}
+              onChange={(_, value) => setLocalOnly({ numbersCount: value as number })}
+              onChangeCommitted={(_, value) => handleSettingsChange({ numbersCount: value as number })}
               min={2}
               max={15}
               step={1}
@@ -812,63 +819,61 @@ const TrainerPage: React.FC = () => {
           </FormControl>
 
           <FormControl fullWidth>
-            <FormLabel>Скорость показа: {currentSettings.displaySpeed}мс</FormLabel>
+            <FormLabel>Скорость показа: {currentSettings.displaySpeed} мс</FormLabel>
             <Slider
               value={currentSettings.displaySpeed}
-              onChange={(_, value) => handleSettingsChange({ displaySpeed: value as number })}
-              min={500}
-              max={5000}
+              onChange={(_, value) => setLocalOnly({ displaySpeed: value as number })}
+              onChangeCommitted={(_, value) => handleSettingsChange({ displaySpeed: value as number })}
+              min={100}
+              max={10000}
               step={100}
-              marks={[
-                { value: 500, label: '0.5с' },
-                { value: 1000, label: '1с' },
-                { value: 2000, label: '2с' },
-                { value: 3000, label: '3с' },
-                { value: 4000, label: '4с' },
-                { value: 5000, label: '5с' },
-              ]}
+              marks
               valueLabelDisplay="auto"
-              sx={{ mt: 2 }}
             />
           </FormControl>
 
           {/* Паузы */}
           <FormControl fullWidth>
-            <FormLabel>Пауза перед стартом: {(currentSettings as any).preStartPause || 0}с</FormLabel>
+            <FormLabel>Пауза перед стартом: {(currentSettings as any).preStartPause}s</FormLabel>
             <Slider
-              value={(currentSettings as any).preStartPause || 0}
-              onChange={(_, value) => handleSettingsChange({ preStartPause: value as number })}
+              value={(currentSettings as any).preStartPause}
+              onChange={(_, value) => setLocalOnly({ preStartPause: value as number } as any)}
+              onChangeCommitted={(_, value) => handleSettingsChange({ preStartPause: value as number })}
               min={0}
-              max={10}
+              max={60}
               step={1}
               marks
               valueLabelDisplay="auto"
             />
           </FormControl>
-          <FormControl fullWidth>
-            <FormLabel>Пауза для ввода ответа: {(currentSettings as any).answerPause || 0}с</FormLabel>
-            <Slider
-              value={(currentSettings as any).answerPause || 0}
-              onChange={(_, value) => handleSettingsChange({ answerPause: value as number })}
-              min={0}
-              max={30}
-              step={1}
-              marks
-              valueLabelDisplay="auto"
-            />
-          </FormControl>
-          <FormControl fullWidth>
-            <FormLabel>Пауза показа результата: {(currentSettings as any).resultPause || 0}с</FormLabel>
-            <Slider
-              value={(currentSettings as any).resultPause || 0}
-              onChange={(_, value) => handleSettingsChange({ resultPause: value as number })}
-              min={0}
-              max={10}
-              step={1}
-              marks
-              valueLabelDisplay="auto"
-            />
-          </FormControl>
+
+            <FormControl fullWidth>
+              <FormLabel>Время для ответа: {(currentSettings as any).answerPause}s</FormLabel>
+              <Slider
+                value={(currentSettings as any).answerPause}
+                onChange={(_, value) => setLocalOnly({ answerPause: value as number } as any)}
+                onChangeCommitted={(_, value) => handleSettingsChange({ answerPause: value as number })}
+                min={0}
+                max={120}
+                step={1}
+                marks
+                valueLabelDisplay="auto"
+              />
+            </FormControl>
+
+            <FormControl fullWidth>
+              <FormLabel>Пауза показа результата: {(currentSettings as any).resultPause}s</FormLabel>
+              <Slider
+                value={(currentSettings as any).resultPause}
+                onChange={(_, value) => setLocalOnly({ resultPause: value as number } as any)}
+                onChangeCommitted={(_, value) => handleSettingsChange({ resultPause: value as number })}
+                min={0}
+                max={60}
+                step={1}
+                marks
+                valueLabelDisplay="auto"
+              />
+            </FormControl>
           
           <Box>
             <FormLabel>Операции:</FormLabel>
