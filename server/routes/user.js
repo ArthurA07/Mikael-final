@@ -353,33 +353,46 @@ router.put('/stats', [
       });
     }
 
-    const updates = {};
-    Object.keys(req.body).forEach(key => {
-      updates[`stats.${key}`] = req.body[key];
+    const setUpdates = {};
+    const incUpdates = {};
+    // Поддержка атомарных инкрементов, чтобы не терять значения из-за гонок
+    if (req.body.incTotalExercises) incUpdates['stats.totalExercises'] = parseInt(req.body.incTotalExercises, 10);
+    if (req.body.incCorrectAnswers) incUpdates['stats.correctAnswers'] = parseInt(req.body.incCorrectAnswers, 10);
+    if (req.body.incTotalTime) incUpdates['stats.totalTime'] = parseInt(req.body.incTotalTime, 10);
+    
+    // Прямая установка значений (если пришли абсолютные)
+    ['totalExercises','correctAnswers','totalTime','currentStreak','experiencePoints','bestAccuracy','longestStreak','level'].forEach(k => {
+      if (req.body[k] !== undefined) setUpdates[`stats.${k}`] = req.body[k];
     });
 
     // Вычисляем уровень на основе опыта
     if (req.body.experiencePoints !== undefined) {
       const level = Math.floor(req.body.experiencePoints / 1000) + 1;
-      updates['stats.level'] = level;
+      setUpdates['stats.level'] = level;
     }
 
     // Обновляем лучшую точность
-    if (req.body.correctAnswers !== undefined && req.body.totalExercises !== undefined) {
+    // либо из абсолютных значений, либо из переданной accuracy
+    if (req.body.accuracy !== undefined) {
+      const accuracy = Math.round(req.body.accuracy);
+      if (accuracy > (req.user.stats.bestAccuracy || 0)) {
+        setUpdates['stats.bestAccuracy'] = accuracy;
+      }
+    } else if (req.body.correctAnswers !== undefined && req.body.totalExercises !== undefined) {
       const accuracy = Math.round((req.body.correctAnswers / req.body.totalExercises) * 100);
-      if (accuracy > req.user.stats.bestAccuracy) {
-        updates['stats.bestAccuracy'] = accuracy;
+      if (accuracy > (req.user.stats.bestAccuracy || 0)) {
+        setUpdates['stats.bestAccuracy'] = accuracy;
       }
     }
 
     // Обновляем самую длинную серию
     if (req.body.currentStreak !== undefined && req.body.currentStreak > req.user.stats.longestStreak) {
-      updates['stats.longestStreak'] = req.body.currentStreak;
+      setUpdates['stats.longestStreak'] = req.body.currentStreak;
     }
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { $set: updates },
+      { ...(Object.keys(setUpdates).length ? { $set: setUpdates } : {}), ...(Object.keys(incUpdates).length ? { $inc: incUpdates } : {}) },
       { new: true, runValidators: true }
     );
 
