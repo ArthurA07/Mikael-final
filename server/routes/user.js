@@ -491,8 +491,8 @@ router.get('/export/history', protect, authorize('admin'), async (req, res) => {
     const q = { userId };
     if (from || to) {
       q.createdAt = {};
-      if (from) q.createdAt.$gte = new Date(from as string);
-      if (to) q.createdAt.$lte = new Date(to as string);
+      if (from) q.createdAt.$gte = new Date(from);
+      if (to) q.createdAt.$lte = new Date(to);
     }
     const rows = await Training.find(q).sort({ createdAt: 1 });
     const header = 'date,mode,operations,numbersCount,range,total,correct,accuracy,score\n';
