@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import axios from 'axios';
+import { useUser } from '../../contexts/UserContext';
 import {
   Box,
   Typography,
@@ -338,6 +340,7 @@ const StatsChip = styled(Chip)(({ theme }) => ({
 
 const InteractiveAbacus: React.FC = () => {
   const theme = useTheme();
+  const { updateUserStats, refreshUserStats, userStats } = useUser();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   const [state, setState] = useState<AbacusState>({
@@ -528,7 +531,7 @@ const InteractiveAbacus: React.FC = () => {
     }));
   }, [state.gameRange, state.columns.length]);
 
-  const checkAnswer = useCallback(() => {
+  const checkAnswer = useCallback(async () => {
     if (!state.targetNumber || !startTime) return;
     
     const currentValue = calculateValue(state.columns);
@@ -558,6 +561,47 @@ const InteractiveAbacus: React.FC = () => {
       setTimeout(() => {
         playSound('complete');
       }, 500);
+    }
+
+    // Сохраняем статистику и историю на сервере (для авторизованных пользователей — токен уже проставлен в axios)
+    try {
+      // История
+      await axios.post('/training/complete', {
+        problems: [{
+          numbers: [state.targetNumber],
+          operation: '+',
+          correctAnswer: state.targetNumber,
+          userAnswer: currentValue,
+          isCorrect,
+          timeSpent: timeTaken,
+          difficulty: 1,
+        }],
+        settings: {
+          numbersCount: 1,
+          numberRange: state.gameRange.max,
+          operations: ['+'],
+          displaySpeed: 0,
+          displayMode: 'abacus',
+          progressiveMode: false,
+        },
+        metrics: { totalTime: timeTaken },
+        sessionType: 'practice',
+      });
+    } catch (e) {
+      // не блокируем UI
+      console.warn('Abacus: failed to save training history', e);
+    }
+
+    try {
+      // Агрегаты
+      await updateUserStats?.({
+        totalExercises: (userStats?.totalExercises || 0) + 1,
+        correctAnswers: (userStats?.correctAnswers || 0) + (isCorrect ? 1 : 0),
+        totalTime: (userStats?.totalTime || 0) + timeTaken,
+      });
+      await refreshUserStats?.();
+    } catch (e) {
+      console.warn('Abacus: failed to update user stats', e);
     }
   }, [state.targetNumber, state.columns, startTime, calculateValue, playSound, state.showHints]);
 
