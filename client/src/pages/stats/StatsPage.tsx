@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, Paper, CircularProgress, Alert, Button } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import axios from 'axios';
 
 const StatsPage: React.FC = () => {
@@ -13,7 +14,9 @@ const StatsPage: React.FC = () => {
         const res = await axios.get('/user/stats');
         setData(res.data?.data);
       } catch (e: any) {
-        setError(e?.response?.data?.error?.message || 'Не удалось получить статистику');
+        // Если статистики нет, показываем дружелюбное состояние по умолчанию
+        setError('Пока нет данных — начните тренировку, чтобы увидеть статистику');
+        setData({ profile: { totalExercises: 0, correctAnswers: 0, bestAccuracy: 0 } });
       } finally {
         setLoading(false);
       }
@@ -27,7 +30,12 @@ const StatsPage: React.FC = () => {
       {loading ? (
         <CircularProgress />
       ) : error ? (
-        <Alert severity="error">{error}</Alert>
+        <Paper sx={{ p: 3 }}>
+          <Alert severity="info" sx={{ mb: 2 }}>{error}</Alert>
+          <Button component={RouterLink} to="/trainer" variant="contained">
+            Перейти к тренировкам
+          </Button>
+        </Paper>
       ) : (
         <Paper sx={{ p: 3 }}>
           <Box sx={{
