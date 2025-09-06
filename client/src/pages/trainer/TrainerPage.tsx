@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import axios from 'axios';
 import {
   Box,
   Typography,
@@ -301,15 +302,11 @@ const TrainerPage: React.FC = () => {
 
           // Сохраняем детальную историю в Training (бэкенд)
           try {
-            await fetch('/api/training/complete', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                problems: updatedProblems,
-                settings: currentSettings,
-                metrics: { totalTime },
-                sessionType: 'practice',
-              })
+            await axios.post('/training/complete', {
+              problems: updatedProblems,
+              settings: currentSettings,
+              metrics: { totalTime },
+              sessionType: 'practice',
             });
           } catch (e) {
             console.warn('Не удалось сохранить историю тренировки:', e);
