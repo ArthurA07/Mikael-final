@@ -159,6 +159,11 @@ const userSchema = new mongoose.Schema({
     unlockedAt: Date,
     icon: String
   }],
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  },
   // Настройки интерфейса
   preferences: {
     theme: {

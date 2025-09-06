@@ -2,7 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const Training = require('../models/Training');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const FreeAccess = require('../models/FreeAccess');
 
 const router = express.Router();
@@ -482,3 +482,37 @@ router.post('/free-abacus', async (req, res) => {
 });
 
 module.exports = router; 
+
+// Экспорт истории в CSV (админ)
+router.get('/export/history', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { userId, from, to } = req.query;
+    if (!userId) return res.status(400).json({ error: { message: 'userId обязателен' } });
+    const q = { userId };
+    if (from || to) {
+      q.createdAt = {};
+      if (from) q.createdAt.$gte = new Date(from as string);
+      if (to) q.createdAt.$lte = new Date(to as string);
+    }
+    const rows = await Training.find(q).sort({ createdAt: 1 });
+    const header = 'date,mode,operations,numbersCount,range,total,correct,accuracy,score\n';
+    const body = rows.map(r => [
+      new Date(r.createdAt).toISOString(),
+      r.settings.displayMode,
+      (r.settings.operations || []).join(''),
+      r.settings.numbersCount,
+      `1-${r.settings.numberRange}`,
+      r.results.totalProblems,
+      r.results.correctAnswers,
+      r.results.accuracy,
+      r.results.score
+    ].join(',')).join('\n');
+    const csv = header + body;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="history.csv"');
+    res.status(200).send(csv);
+  } catch (e) {
+    console.error('Export history error:', e);
+    res.status(500).json({ error: { message: 'Ошибка экспорта' } });
+  }
+});

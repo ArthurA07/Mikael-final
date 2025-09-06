@@ -8,6 +8,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const trainingRoutes = require('./routes/training');
+const User = require('./models/User');
 
 const app = express();
 
@@ -76,9 +77,30 @@ app.use('/api/*', (req, res) => {
 // Database connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/mental-arithmetic';
 
+async function seedAdmin() {
+  try {
+    const email = process.env.ADMIN_EMAIL || 'admin@example.com';
+    const password = process.env.ADMIN_PASSWORD || 'Admin123!';
+    let admin = await User.findOne({ email });
+    if (!admin) {
+      admin = await User.create({ name: 'Admin', email, password, role: 'admin' });
+      console.log(`Admin user created: ${email}`);
+    } else if (admin.role !== 'admin') {
+      admin.role = 'admin';
+      await admin.save();
+      console.log(`User elevated to admin: ${email}`);
+    } else {
+      console.log('Admin user exists');
+    }
+  } catch (e) {
+    console.warn('Admin seed warning:', e?.message || e);
+  }
+}
+
 mongoose.connect(MONGODB_URI)
-  .then(() => {
+  .then(async () => {
     console.log('Подключение к MongoDB успешно установлено');
+    await seedAdmin();
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
       console.log(`Сервер запущен на порту ${PORT}`);
