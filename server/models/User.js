@@ -181,6 +181,18 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Поля для восстановления пароля
+userSchema.add({
+  resetPasswordToken: {
+    type: String,
+    default: null
+  },
+  resetPasswordExpire: {
+    type: Date,
+    default: null
+  }
+});
+
 // Хэширование пароля перед сохранением
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();

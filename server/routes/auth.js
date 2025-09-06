@@ -2,6 +2,8 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { generateToken, protect } = require('../middleware/auth');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 const router = express.Router();
 
@@ -278,3 +280,74 @@ router.put('/change-password', protect, [
 });
 
 module.exports = router; 
+
+// Восстановление пароля — запрос ссылки
+router.post('/forgot-password', [
+  body('email').isEmail().withMessage('Введите корректный email')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: { message: 'Ошибки валидации', details: errors.array() } });
+    }
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.json({ success: true, message: 'Если email существует, мы отправили ссылку' });
+
+    const resetTokenRaw = crypto.randomBytes(20).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetTokenRaw).digest('hex');
+    user.resetPasswordToken = resetTokenHash;
+    user.resetPasswordExpire = new Date(Date.now() + 1000 * 60 * 15); // 15 минут
+    await user.save({ validateBeforeSave: false });
+
+    const resetUrl = `${process.env.PUBLIC_APP_URL || 'https://mikael-final-1.onrender.com'}/reset-password?token=${resetTokenRaw}`;
+
+    // Транспорт для почты (минимальный SMTP, можно заменить на любой сервис)
+    const port = parseInt(process.env.SMTP_PORT || '587', 10);
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port,
+      secure: port === 465,
+      auth: process.env.SMTP_USER && process.env.SMTP_PASS ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
+    });
+    const mailOptions = {
+      from: process.env.SMTP_FROM || 'no-reply@mikael-final.app',
+      to: email,
+      subject: 'Восстановление пароля',
+      text: `Для сброса пароля перейдите по ссылке: ${resetUrl} (действует 15 минут)`
+    };
+    try { await transporter.sendMail(mailOptions); } catch (e) { console.warn('Mail send warning', e?.message); }
+
+    res.json({ success: true, message: 'Если email существует, мы отправили ссылку' });
+  } catch (e) {
+    console.error('Forgot password error:', e);
+    res.status(500).json({ error: { message: 'Ошибка восстановления пароля' } });
+  }
+});
+
+// Установка нового пароля по токену
+router.post('/reset-password', [
+  body('token').notEmpty().withMessage('Токен обязателен'),
+  body('password').isLength({ min: 6 }).withMessage('Минимум 6 символов')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: { message: 'Ошибки валидации', details: errors.array() } });
+    }
+    const { token, password } = req.body;
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({ resetPasswordToken: tokenHash, resetPasswordExpire: { $gt: new Date() } }).select('+password');
+    if (!user) return res.status(400).json({ error: { message: 'Токен недействителен или истёк' } });
+
+    user.password = password;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpire = null;
+    await user.save();
+
+    res.json({ success: true, message: 'Пароль обновлён' });
+  } catch (e) {
+    console.error('Reset password error:', e);
+    res.status(500).json({ error: { message: 'Ошибка обновления пароля' } });
+  }
+});
