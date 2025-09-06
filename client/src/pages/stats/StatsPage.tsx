@@ -37,26 +37,44 @@ const StatsPage: React.FC = () => {
           </Button>
         </Paper>
       ) : (
-        <Paper sx={{ p: 3 }}>
-          <Box sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-            gap: 2,
-          }}>
-            <Box>
-              <Typography color="text.secondary">Всего упражнений</Typography>
-              <Typography variant="h5">{data?.profile?.totalExercises ?? 0}</Typography>
+        <>
+          <Paper sx={{ p: 3, mb: 2 }}>
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+              gap: 2,
+            }}>
+              <Box>
+                <Typography color="text.secondary">Всего упражнений</Typography>
+                <Typography variant="h5">{data?.profile?.totalExercises ?? 0}</Typography>
+              </Box>
+              <Box>
+                <Typography color="text.secondary">Правильных ответов</Typography>
+                <Typography variant="h5">{data?.profile?.correctAnswers ?? 0}</Typography>
+              </Box>
+              <Box>
+                <Typography color="text.secondary">Лучшая точность</Typography>
+                <Typography variant="h5">{data?.profile?.bestAccuracy ?? 0}%</Typography>
+              </Box>
             </Box>
-            <Box>
-              <Typography color="text.secondary">Правильных ответов</Typography>
-              <Typography variant="h5">{data?.profile?.correctAnswers ?? 0}</Typography>
-            </Box>
-            <Box>
-              <Typography color="text.secondary">Лучшая точность</Typography>
-              <Typography variant="h5">{data?.profile?.bestAccuracy ?? 0}%</Typography>
-            </Box>
-          </Box>
-        </Paper>
+          </Paper>
+
+          {data?.training && (
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>Сводка по тренировкам</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
+                <Box>
+                  <Typography color="text.secondary">Всего сессий</Typography>
+                  <Typography variant="h5">{data.training.totalSessions ?? 0}</Typography>
+                </Box>
+                <Box>
+                  <Typography color="text.secondary">Лучший счёт</Typography>
+                  <Typography variant="h5">{data.training.bestScore ?? 0}</Typography>
+                </Box>
+              </Box>
+            </Paper>
+          )}
+        </>
       )}
     </Box>
   );

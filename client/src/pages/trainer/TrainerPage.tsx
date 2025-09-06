@@ -298,6 +298,22 @@ const TrainerPage: React.FC = () => {
             totalTime: (user.stats?.totalTime || 0) + totalTime,
             bestAccuracy: Math.max(user.stats?.bestAccuracy || 0, accuracy),
           });
+
+          // Сохраняем детальную историю в Training (бэкенд)
+          try {
+            await fetch('/api/training/complete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                problems: updatedProblems,
+                settings: currentSettings,
+                metrics: { totalTime },
+                sessionType: 'practice',
+              })
+            });
+          } catch (e) {
+            console.warn('Не удалось сохранить историю тренировки:', e);
+          }
           
           if (accuracy === 100) {
             await addAchievement({

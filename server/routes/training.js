@@ -140,4 +140,60 @@ router.get('/:trainingId/problem', async (req, res) => {
   }
 });
 
+// Завершение сессии и сохранение результатов
+router.post('/complete', [
+  body('problems').isArray().withMessage('problems должен быть массивом'),
+  body('settings').isObject().withMessage('settings обязателен'),
+  body('metrics').isObject().withMessage('metrics обязателен'),
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: { message: 'Ошибки валидации', details: errors.array() } });
+    }
+
+    const { problems, settings, metrics, sessionType = 'practice' } = req.body;
+
+    const training = new Training({
+      userId: req.user._id,
+      settings: {
+        numbersCount: settings.numbersCount,
+        numberRange: settings.numberRange,
+        operations: settings.operations,
+        displaySpeed: settings.displaySpeed,
+        displayMode: settings.displayMode,
+        progressiveMode: settings.progressiveMode || false,
+      },
+      problems: problems.map((p) => ({
+        numbers: p.numbers,
+        operation: p.operation,
+        correctAnswer: p.correctAnswer,
+        userAnswer: p.userAnswer ?? null,
+        isCorrect: !!p.isCorrect,
+        timeSpent: p.timeSpent || 0,
+        difficulty: p.difficulty || 1,
+      })),
+      results: {
+        totalProblems: 0, // вычислится в pre('save')
+        correctAnswers: 0,
+        incorrectAnswers: 0,
+        accuracy: 0,
+        totalTime: metrics.totalTime || 0,
+        averageTime: 0,
+        score: 0,
+      },
+      sessionType,
+      completed: true,
+      completedAt: new Date(),
+    });
+
+    await training.save();
+
+    res.json({ success: true, data: { trainingId: training._id } });
+  } catch (error) {
+    console.error('Complete training error:', error);
+    res.status(500).json({ error: { message: 'Ошибка при сохранении результатов' } });
+  }
+});
+
 module.exports = router; 
