@@ -61,8 +61,8 @@ const HistoryPage: React.FC = () => {
       ) : (
         <Stack spacing={2}>
           {items.map((t) => (
-            <Paper key={t._id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
+            <Paper key={t._id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, flexDirection: { xs: 'column', md: 'row' }, gap: 1 }}>
+              <Box sx={{ mb: { xs: 1, md: 0 } }}>
                 <Typography variant="subtitle1">
                   {new Date(t.createdAt).toLocaleString()}
                 </Typography>
@@ -70,7 +70,7 @@ const HistoryPage: React.FC = () => {
                   {t.settings?.displayMode === 'abacus' ? 'Абакус' : 'Цифры'} · {t.settings?.operations?.join(', ')} · {t.settings?.numbersCount} чисел · 1–{t.settings?.numberRange}
                 </Typography>
               </Box>
-              <Stack direction="row" spacing={3}>
+              <Stack direction="row" spacing={3} sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'space-between', md: 'flex-start' } }}>
                 <Box textAlign="center">
                   <Typography variant="h6">{t.results?.totalProblems ?? 0}</Typography>
                   <Typography variant="caption">примеров</Typography>
@@ -81,7 +81,7 @@ const HistoryPage: React.FC = () => {
                 </Box>
                 <Box textAlign="center">
                   <Typography variant="h6">{t.results?.score ?? 0}</Typography>
-                  <Typography variant="caption">счёт</Typography>
+                  <Typography variant="caption">баллы</Typography>
                 </Box>
                 <Button component={RouterLink} to={`/stats/history/${t._id}`} size="small" variant="outlined">Подробнее</Button>
               </Stack>

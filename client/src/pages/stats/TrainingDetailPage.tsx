@@ -33,7 +33,7 @@ const TrainingDetailPage: React.FC = () => {
     <Box p={3}>
       <Typography variant="h4" sx={{ mb: 2 }}>Тренировка от {new Date(data.createdAt).toLocaleString()}</Typography>
       <Paper sx={{ p: 2, mb: 2 }}>
-        <Stack direction="row" spacing={2}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <Chip label={data.settings?.displayMode === 'abacus' ? 'Абакус' : 'Цифры'} />
           <Chip label={`Операции: ${data.settings?.operations?.join(', ')}`} />
           <Chip label={`Чисел: ${data.settings?.numbersCount}`} />
@@ -44,7 +44,7 @@ const TrainingDetailPage: React.FC = () => {
       <Paper sx={{ p: 2 }}>
         <Typography variant="h6" sx={{ mb: 1 }}>Примеры</Typography>
         {data.problems?.length ? data.problems.map((p: any, i: number) => (
-          <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', py: 1, borderBottom: '1px solid #eee' }}>
+          <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, py: 1, borderBottom: '1px solid #eee', flexDirection: { xs: 'column', md: 'row' } }}>
             <Typography>{p.numbers?.join(` ${p.operation} `)} = {p.correctAnswer}</Typography>
             <Typography color={p.isCorrect ? 'success.main' : 'error.main'}>
               Ваш ответ: {p.userAnswer ?? '—'} · {Math.round(p.timeSpent || 0)} мс
