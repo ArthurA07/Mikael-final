@@ -207,6 +207,7 @@ const TrainerPage: React.FC = () => {
       problemStartTime: Date.now(),
       timeLeft: currentSettings.displaySpeed,
       sequentialIndex: 0,
+      userAnswer: '',
     }));
     
     const prePauseMs = ((currentSettings as any).preStartPause || 0) * 1000;
