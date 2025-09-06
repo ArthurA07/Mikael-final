@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, TextField, Button, Stack, Alert, Avatar, Divider, Tooltip, Collapse } from '@mui/material';
+import { Box, Typography, Paper, TextField, Button, Stack, Alert, Avatar, Divider, Collapse } from '@mui/material';
 // используем CSS grid вместо MUI Grid, чтобы избежать типовых несовместимостей
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,7 +11,7 @@ const ProfilePage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [avatar, setAvatar] = useState('');
+  const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/big-smile/svg?seed=kid&radius=50&backgroundType=gradientLinear&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc';
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [pwdMsg, setPwdMsg] = useState<string | null>(null);
@@ -27,7 +27,7 @@ const ProfilePage: React.FC = () => {
     if (user) {
       setName(user.name || '');
       setPhone(user.phone || '');
-      setAvatar((user as any).avatar || '');
+      // аватар теперь статичный для всех
     }
   }, [user]);
 
@@ -40,7 +40,7 @@ const ProfilePage: React.FC = () => {
       const payload: any = {};
       if (name.trim()) payload.name = name.trim();
       if (phone.trim()) payload.phone = phone.trim();
-      if (avatar.trim()) payload.avatar = avatar.trim();
+      // аватар не редактируется — статичный
       const res = await axios.put('/auth/profile', payload);
       if (res.data?.success) {
         updateUser(res.data.data.user);
@@ -84,11 +84,10 @@ const ProfilePage: React.FC = () => {
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <form onSubmit={onSave}>
           <Stack spacing={2}>
-            {/* скрытая кнопка для сброса локального статуса, если понадобится */}
-            <Button variant="outlined" onClick={() => { setSuccess(null); setError(null); setSaving(false); }} sx={{ display: 'none' }} />
+            {/* Статичный аватар для всех пользователей */}
             <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar src={avatar} sx={{ width: 64, height: 64 }} />
-              <TextField label="Ссылка на аватар" value={avatar} onChange={e => setAvatar(e.target.value)} fullWidth />
+              <Avatar src={DEFAULT_AVATAR} sx={{ width: 64, height: 64 }} />
+              <Typography color="text.secondary">Аватар по умолчанию</Typography>
             </Stack>
             <TextField 
               label="Имя" 
@@ -111,30 +110,7 @@ const ProfilePage: React.FC = () => {
           </Stack>
         </form>
 
-        <Divider sx={{ my: 3 }} />
-        <Typography variant="h6" sx={{ mb: 1 }}>Выбрать готовый аватар</Typography>
-        <Box sx={{
-          mb: 2,
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: 'repeat(4, 56px)',
-            sm: 'repeat(6, 56px)',
-            md: 'repeat(8, 56px)'
-          },
-          gap: 1
-        }}>
-          {presetAvatars.map((url, idx) => (
-            <Box key={idx} sx={{ width: 56, height: 56 }}>
-              <Tooltip title="Выбрать">
-                <Avatar
-                  src={url}
-                  sx={{ width: 56, height: 56, cursor: 'pointer', border: avatar === url ? '2px solid #667eea' : '2px solid transparent' }}
-                  onClick={() => setAvatar(url)}
-                />
-              </Tooltip>
-            </Box>
-          ))}
-        </Box>
+        {/* Блок выбора аватаров скрыт по запросу */}
 
         <Divider sx={{ my: 3 }} />
         <Typography variant="h6" sx={{ mb: 1 }}>Сменить пароль</Typography>
