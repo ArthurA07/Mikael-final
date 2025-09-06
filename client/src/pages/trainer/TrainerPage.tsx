@@ -326,15 +326,10 @@ const TrainerPage: React.FC = () => {
         currentStep: 'showing',
         problemStartTime: Date.now(),
         timeLeft: currentSettings.displaySpeed,
+        // критично: при новом примере в последовательном режиме всегда начинаем с первого шага
+        sequentialIndex: 0,
       }));
-      
-      problemTimeoutRef.current = setTimeout(() => {
-        setState(prev => ({
-          ...prev,
-          showProblem: false,
-          currentStep: 'answering',
-        }));
-      }, currentSettings.displaySpeed);
+      // Не используем внешний таймер перехода: показом и переходом управляет эффект показа
     }
   }, [state, currentSettings.displaySpeed, user, updateUserStats, addAchievement, isAuthenticated, clearCurrentTimeout]);
 
