@@ -55,6 +55,13 @@ export const useAuth = () => {
 
 // Настройка axios
 axios.defaults.baseURL = config.API_BASE_URL;
+// Подхватываем токен сразу при инициализации (до эффектов)
+try {
+  const bootstrapToken = localStorage.getItem('token');
+  if (bootstrapToken) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${bootstrapToken}`;
+  }
+} catch {}
 
 // Провайдер контекста
 interface AuthProviderProps {
@@ -105,6 +112,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (response.data.success) {
         const { token: newToken, user: userData } = response.data.data;
+        // Ставим заголовок немедленно, чтобы следующие запросы не успели уйти без токена
+        axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
         setToken(newToken);
         setUser(userData);
         return true;
@@ -127,6 +136,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (response.data.success) {
         const { token: newToken, user: newUser } = response.data.data;
+        axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
         setToken(newToken);
         setUser(newUser);
         return true;

@@ -108,7 +108,7 @@ const TrainerPage: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { user, isAuthenticated } = useAuth();
-  const { trainerSettings, updateTrainerSettings, updateUserStats, addAchievement } = useUser();
+  const { trainerSettings, updateTrainerSettings, updateUserStats, addAchievement, userStats } = useUser();
   
   const [state, setState] = useState<TrainerState>({
     isTraining: false,
@@ -1028,8 +1028,8 @@ const TrainerPage: React.FC = () => {
             </Box>
           </Paper>
 
-          {/* Статистика пользователя */}
-          {user?.stats && (
+          {/* Статистика пользователя (из UserContext) */}
+          {(userStats || user?.stats) && (
             <Paper sx={{ p: 3, maxWidth: '600px', mx: 'auto' }}>
               <Typography variant="h6" sx={{ mb: 2, textAlign: 'center' }}>
                 📊 Ваша статистика
@@ -1038,16 +1038,16 @@ const TrainerPage: React.FC = () => {
               <Stack direction={isMobile ? 'column' : 'row'} spacing={2} sx={{ justifyContent: 'center' }}>
                 <Box sx={{ textAlign: 'center', minWidth: 100 }}>
                   <Typography variant="h6" color="primary">
-                    {user.stats.totalExercises || 0}
+                    {(userStats?.totalExercises ?? user?.stats?.totalExercises) || 0}
                   </Typography>
                   <Typography variant="body2">
-                    Упражнений
+                    Кол-во примеров
                   </Typography>
                 </Box>
                 
                 <Box sx={{ textAlign: 'center', minWidth: 100 }}>
                   <Typography variant="h6" color="primary">
-                    {user.stats.correctAnswers || 0}
+                    {(userStats?.correctAnswers ?? user?.stats?.correctAnswers) || 0}
                   </Typography>
                   <Typography variant="body2">
                     Правильных
@@ -1056,16 +1056,16 @@ const TrainerPage: React.FC = () => {
                 
                 <Box sx={{ textAlign: 'center', minWidth: 100 }}>
                   <Typography variant="h6" color="primary">
-                    {user.stats.bestAccuracy?.toFixed(1) || '0'}%
+                    {((userStats?.bestAccuracy ?? user?.stats?.bestAccuracy) ?? 0).toFixed ? ((userStats?.bestAccuracy ?? user?.stats?.bestAccuracy) as number).toFixed(1) : (userStats?.bestAccuracy ?? user?.stats?.bestAccuracy ?? 0)}%
                   </Typography>
                   <Typography variant="body2">
-                    Лучшая точность
+                    Точность (лучшая)
                   </Typography>
                 </Box>
                 
                 <Box sx={{ textAlign: 'center', minWidth: 100 }}>
                   <Typography variant="h6" color="primary">
-                    {user.stats.level || 1}
+                    {(userStats?.level ?? user?.stats?.level) || 1}
                   </Typography>
                   <Typography variant="body2">
                     Уровень
