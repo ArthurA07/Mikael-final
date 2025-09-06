@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 
 // Типы данных для настроек тренажёра
 interface TrainerSettings {
+  totalProblems: number;
   numbersCount: number;
   numberRange: number;
   operations: string[];
@@ -61,6 +62,7 @@ interface UserContextType {
 
 // Значения по умолчанию для настроек тренажёра
 const defaultTrainerSettings: TrainerSettings = {
+  totalProblems: 10,
   numbersCount: 3,
   numberRange: 10,
   operations: ['+'],

@@ -135,6 +135,7 @@ const TrainerPage: React.FC = () => {
   useEffect(() => {
     const initSettings = () => {
       if (isAuthenticated && trainerSettings) {
+        // объединяем серверные настройки с локальными, НЕ теряя totalProblems
         setLocalSettings(prev => ({ ...prev, ...trainerSettings }));
       } else {
         // Для неавторизованных пользователей пробуем загрузить из localStorage
@@ -348,7 +349,8 @@ const TrainerPage: React.FC = () => {
           'numbersCount', 'numberRange', 'operations', 'displaySpeed', 'displayMode',
           // новые ключи, сохраняемые на сервер
           'multiplyDigits1','multiplyDigits2','divisionDividendDigits','divisionDivisorDigits',
-          'preStartPause','answerPause','resultPause','fontScale','randomPosition','randomColor','sequentialDisplay'
+          'preStartPause','answerPause','resultPause','fontScale','randomPosition','randomColor','sequentialDisplay',
+          'totalProblems'
         ];
         const payload: Partial<typeof currentSettings> = {};
         serverAllowedKeys.forEach((k) => {
