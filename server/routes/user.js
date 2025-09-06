@@ -251,6 +251,21 @@ router.get('/training-history', async (req, res) => {
   }
 });
 
+// Получение одной тренировки по id (для детального просмотра)
+router.get('/training/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const training = await Training.findOne({ _id: id, userId: req.user._id });
+    if (!training) {
+      return res.status(404).json({ error: { message: 'Тренировка не найдена' } });
+    }
+    res.json({ success: true, data: { training } });
+  } catch (error) {
+    console.error('Get training detail error:', error);
+    res.status(500).json({ error: { message: 'Ошибка при получении тренировки' } });
+  }
+});
+
 // Добавление достижения
 router.post('/achievements', [
   body('id')

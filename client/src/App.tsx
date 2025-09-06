@@ -24,6 +24,7 @@ import ProfilePage from './pages/profile/ProfilePage';
 import AchievementsPage from './pages/achievements/AchievementsPage';
 import StatsPage from './pages/stats/StatsPage';
 import HistoryPage from './pages/stats/HistoryPage';
+import TrainingDetailPage from './pages/stats/TrainingDetailPage';
 
 // Создаём тему для приложения
 const theme = createTheme({
@@ -320,6 +321,11 @@ function App() {
                 <Route path="/stats/history" element={
                   <ProtectedRoute>
                     <HistoryPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/stats/history/:id" element={
+                  <ProtectedRoute>
+                    <TrainingDetailPage />
                   </ProtectedRoute>
                 } />
                 

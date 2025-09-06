@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, CircularProgress, Alert, Button, Stack } from '@mui/material';
+import { Box, Typography, Paper, CircularProgress, Alert, Button, Stack, Chip } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import axios from 'axios';
 
 interface TrainingItem {
@@ -82,6 +83,7 @@ const HistoryPage: React.FC = () => {
                   <Typography variant="h6">{t.results?.score ?? 0}</Typography>
                   <Typography variant="caption">счёт</Typography>
                 </Box>
+                <Button component={RouterLink} to={`/stats/history/${t._id}`} size="small" variant="outlined">Подробнее</Button>
               </Stack>
             </Paper>
           ))}
