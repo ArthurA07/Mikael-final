@@ -66,7 +66,7 @@ const HistoryPage: React.FC = () => {
   return (
     <Box p={3}>
       <Typography variant="h4" sx={{ mb: 2 }}>История тренировок</Typography>
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2 }}>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2, alignItems: 'center' }}>
         <ToggleButtonGroup
           size="small"
           exclusive
@@ -77,8 +77,8 @@ const HistoryPage: React.FC = () => {
           <ToggleButton value="digits">Цифры</ToggleButton>
           <ToggleButton value="abacus">Абакус</ToggleButton>
         </ToggleButtonGroup>
-        <TextField label="С" type="date" size="small" value={from} onChange={(e) => setFrom(e.target.value)} InputLabelProps={{ shrink: true }} />
-        <TextField label="По" type="date" size="small" value={to} onChange={(e) => setTo(e.target.value)} InputLabelProps={{ shrink: true }} />
+        <TextField label="С" type="date" size="small" value={from} onChange={(e) => setFrom(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ '& .MuiInputBase-root': { height: 40 } }} />
+        <TextField label="По" type="date" size="small" value={to} onChange={(e) => setTo(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ '& .MuiInputBase-root': { height: 40 } }} />
         <Button variant="contained" onClick={() => load(1)}>Применить</Button>
         <Button variant="text" onClick={() => { setMode('all'); setFrom(''); setTo(''); load(1); }}>Сбросить</Button>
         <Button variant="outlined" onClick={() => { setDays(7); }}>7 дней</Button>
