@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Button, Card, CardContent, Chip, IconButton, InputAdornment, Pagination, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Chip, IconButton, InputAdornment, Pagination, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { Search, FileDownload, Refresh } from '@mui/icons-material';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -19,6 +19,10 @@ const AdminPage: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetPassword2, setResetPassword2] = useState('');
+  const [resetError, setResetError] = useState('');
 
   const load = useMemo(() => async () => {
     setLoading(true);
@@ -50,10 +54,37 @@ const AdminPage: React.FC = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const handleResetPassword = async (userId: string) => {
-    const res = await axios.post(`/admin/users/${userId}/reset-password`);
-    const temp = res.data?.data?.tempPassword || 'Temp123!';
-    alert(`Временный пароль: ${temp}`);
+  const openResetPassword = (userId: string) => {
+    setResetUserId(userId);
+    setResetPassword('');
+    setResetPassword2('');
+    setResetError('');
+  };
+
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
+    let out = '';
+    for (let i = 0; i < 10; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    setResetPassword(out);
+    setResetPassword2(out);
+  };
+
+  const handleResetSubmit = async () => {
+    if (!resetPassword || resetPassword.length < 8) {
+      setResetError('Минимум 8 символов');
+      return;
+    }
+    if (resetPassword !== resetPassword2) {
+      setResetError('Пароли не совпадают');
+      return;
+    }
+    try {
+      await axios.post(`/admin/users/${resetUserId}/reset-password`, { newPassword: resetPassword });
+      alert('Пароль обновлён');
+      setResetUserId(null);
+    } catch (e: any) {
+      setResetError(e?.response?.data?.error?.message || 'Ошибка сброса пароля');
+    }
   };
 
   return (
@@ -103,7 +134,7 @@ const AdminPage: React.FC = () => {
                   <TableCell>{dayjs(u.createdAt).format('YYYY-MM-DD HH:mm')}</TableCell>
                   <TableCell align="right">
                     <Button size="small" variant="outlined" startIcon={<FileDownload />} onClick={() => handleExport(u._id)}>Экспорт</Button>
-                    <Button size="small" sx={{ ml: 1 }} variant="contained" color="warning" onClick={() => handleResetPassword(u._id)}>Сброс пароля</Button>
+                    <Button size="small" sx={{ ml: 1 }} variant="contained" color="warning" onClick={() => openResetPassword(u._id)}>Сброс пароля</Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -115,6 +146,38 @@ const AdminPage: React.FC = () => {
           {loading && <Typography sx={{ mt: 1 }}>Загрузка...</Typography>}
         </CardContent>
       </Card>
+
+      <Dialog open={!!resetUserId} onClose={() => setResetUserId(null)}>
+        <DialogTitle>Сброс пароля</DialogTitle>
+        <DialogContent>
+          <TextField
+            margin="dense"
+            fullWidth
+            type="password"
+            label="Новый пароль (мин. 8 символов)"
+            value={resetPassword}
+            onChange={(e) => setResetPassword(e.target.value)}
+          />
+          <TextField
+            margin="dense"
+            fullWidth
+            type="password"
+            label="Повторите пароль"
+            value={resetPassword2}
+            onChange={(e) => setResetPassword2(e.target.value)}
+          />
+          {!!resetError && (
+            <Typography color="error" variant="body2" sx={{ mt: 1 }}>{resetError}</Typography>
+          )}
+          <Button onClick={generatePassword} sx={{ mt: 1 }}>
+            Сгенерировать безопасный пароль
+          </Button>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetUserId(null)}>Отмена</Button>
+          <Button variant="contained" onClick={handleResetSubmit}>Сохранить</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
