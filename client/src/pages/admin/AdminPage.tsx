@@ -37,8 +37,17 @@ const AdminPage: React.FC = () => {
   }, [load]);
 
   const handleExport = async (userId: string) => {
-    const url = `/admin/users/${userId}/export`;
-    window.open(url, '_blank');
+    // Запрашиваем CSV с авторизацией и скачиваем как файл
+    const res = await axios.get(`/admin/users/${userId}/export`, { responseType: 'blob' });
+    const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'history.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
 
   const handleResetPassword = async (userId: string) => {
