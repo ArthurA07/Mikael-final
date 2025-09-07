@@ -82,7 +82,7 @@ const HistoryPage: React.FC = () => {
           size="small"
           value={from}
           onChange={(e) => setFrom(e.target.value)}
-          InputProps={{ startAdornment: <InputAdornment position="start">С</InputAdornment> }}
+          InputProps={{ startAdornment: <InputAdornment position="start">с</InputAdornment> }}
           sx={{ '& .MuiInputBase-root': { height: 40 } }}
         />
         <TextField
@@ -90,7 +90,7 @@ const HistoryPage: React.FC = () => {
           size="small"
           value={to}
           onChange={(e) => setTo(e.target.value)}
-          InputProps={{ startAdornment: <InputAdornment position="start">По</InputAdornment> }}
+          InputProps={{ startAdornment: <InputAdornment position="start">по</InputAdornment> }}
           sx={{ '& .MuiInputBase-root': { height: 40 } }}
         />
         <Button variant="contained" onClick={() => load(1)}>Применить</Button>
