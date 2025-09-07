@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, CircularProgress, Alert, Button, Stack, Chip, ToggleButton, ToggleButtonGroup, TextField } from '@mui/material';
+import { Box, Typography, Paper, CircularProgress, Alert, Button, Stack, Chip, ToggleButton, ToggleButtonGroup, TextField, InputAdornment } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import axios from 'axios';
 
@@ -77,8 +77,22 @@ const HistoryPage: React.FC = () => {
           <ToggleButton value="digits">Цифры</ToggleButton>
           <ToggleButton value="abacus">Абакус</ToggleButton>
         </ToggleButtonGroup>
-        <TextField label="С" type="date" size="small" value={from} onChange={(e) => setFrom(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ '& .MuiInputBase-root': { height: 40 } }} />
-        <TextField label="По" type="date" size="small" value={to} onChange={(e) => setTo(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ '& .MuiInputBase-root': { height: 40 } }} />
+        <TextField
+          type="date"
+          size="small"
+          value={from}
+          onChange={(e) => setFrom(e.target.value)}
+          InputProps={{ startAdornment: <InputAdornment position="start">С</InputAdornment> }}
+          sx={{ '& .MuiInputBase-root': { height: 40 } }}
+        />
+        <TextField
+          type="date"
+          size="small"
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
+          InputProps={{ startAdornment: <InputAdornment position="start">По</InputAdornment> }}
+          sx={{ '& .MuiInputBase-root': { height: 40 } }}
+        />
         <Button variant="contained" onClick={() => load(1)}>Применить</Button>
         <Button variant="text" onClick={() => { setMode('all'); setFrom(''); setTo(''); load(1); }}>Сбросить</Button>
         <Button variant="outlined" onClick={() => { setDays(7); }}>7 дней</Button>
