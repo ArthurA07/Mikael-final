@@ -1084,17 +1084,7 @@ const TrainerPage: React.FC = () => {
             </Box>
           </Paper>
 
-          {/* Быстрые пресеты */}
-          <Paper sx={{ p: 2, mb: 3, maxWidth: '700px', mx: 'auto' }}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>Быстрый старт</Typography>
-            <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap">
-              <Chip label="Лёгкий (1-10, 2 числа)" onClick={() => handleSettingsChange({ numberRange: 10, numberRangeMin: 1, numbersCount: 2, operations: ['+'], displayMode: 'digits' })} />
-              <Chip label="Стандарт (1-100, 3 числа)" onClick={() => handleSettingsChange({ numberRange: 100, numberRangeMin: 1, numbersCount: 3, operations: ['+','-'], displayMode: 'digits' })} />
-              <Chip label="Абакус (1-100, 3)" onClick={() => handleSettingsChange({ displayMode: 'abacus', numberRange: 100, numberRangeMin: 1, numbersCount: 3 })} />
-              <Chip label="Скорость x2" onClick={() => handleSettingsChange({ displaySpeed: Math.max(100, Math.floor(currentSettings.displaySpeed / 2)) })} />
-              <Chip label="Сброс визуализации" onClick={() => handleSettingsChange({ fontScale: 1, randomPosition: false, randomColor: false, sequentialDisplay: false })} />
-            </Stack>
-          </Paper>
+          {/* Быстрый старт отключён по просьбе пользователя */}
 
           {/* Статистика пользователя (из UserContext) */}
           {(userStats || user?.stats) && (
