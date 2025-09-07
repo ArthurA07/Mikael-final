@@ -446,6 +446,24 @@ const Navbar: React.FC = () => {
         >
           📊 Моя статистика
         </MenuItem>
+        {user?.role === 'admin' && (
+          <MenuItem 
+            onClick={() => {
+              navigate('/admin');
+              handleMenuClose();
+            }}
+            sx={{
+              borderRadius: '10px',
+              mx: 1,
+              my: 0.5,
+              '&:hover': {
+                backgroundColor: 'rgba(255,255,255,0.1)',
+              },
+            }}
+          >
+            🛡️ Админ
+          </MenuItem>
+        )}
         <MenuItem 
           onClick={handleLogout}
           sx={{
