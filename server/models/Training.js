@@ -1,6 +1,47 @@
 const mongoose = require('mongoose');
 
 const trainingSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+  settings: { type: Object, default: {} },
+  results: { type: Object, default: {} },
+  metrics: { type: Object, default: {} },
+  sessionType: { type: String, default: 'practice' },
+  completed: { type: Boolean, default: true },
+}, { timestamps: true });
+
+trainingSchema.statics.getUserStats = async function(userId, period) {
+  const match = { userId: new mongoose.Types.ObjectId(userId), completed: true };
+  const now = new Date();
+  if (period === 'week') {
+    match.createdAt = { $gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) };
+  } else if (period === 'month') {
+    match.createdAt = { $gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) };
+  }
+  const rows = await this.aggregate([
+    { $match: match },
+    { $group: {
+      _id: null,
+      totalSessions: { $sum: 1 },
+      totalProblems: { $sum: { $ifNull: ['$results.totalProblems', 0] } },
+      totalCorrect: { $sum: { $ifNull: ['$results.correctAnswers', 0] } },
+      totalTime: { $sum: { $ifNull: ['$results.totalTime', 0] } },
+      averageAccuracy: { $avg: { $ifNull: ['$results.accuracy', 0] } },
+      bestAccuracy: { $max: { $ifNull: ['$results.accuracy', 0] } },
+      totalScore: { $sum: { $ifNull: ['$results.score', 0] } },
+      bestScore: { $max: { $ifNull: ['$results.score', 0] } },
+    } },
+  ]);
+  return rows[0] || { totalSessions:0,totalProblems:0,totalCorrect:0,totalTime:0,averageAccuracy:0,bestAccuracy:0,totalScore:0,bestScore:0 };
+};
+
+trainingSchema.statics.getLastSession = async function(userId) {
+  return this.findOne({ userId, completed: true }).sort({ createdAt: -1 });
+};
+
+module.exports = mongoose.model('Training', trainingSchema);
+const mongoose = require('mongoose');
+
+const trainingSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

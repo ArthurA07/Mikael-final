@@ -166,13 +166,16 @@ router.get('/stats', async (req, res) => {
     
     // Получаем статистику из профиля пользователя
     const user = await User.findById(req.user._id);
+    // Последняя сессия
+    const lastSession = await Training.getLastSession(req.user._id);
     
     res.json({
       success: true,
       data: {
         profile: user.stats,
         training: trainingStats,
-        achievements: user.achievements
+        achievements: user.achievements,
+        lastSession
       }
     });
   } catch (error) {
@@ -211,7 +214,7 @@ router.get('/progress', async (req, res) => {
 // Получение истории тренировок
 router.get('/training-history', async (req, res) => {
   try {
-    const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+    const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc', mode, from, to } = req.query;
     
     const options = {
       skip: (parseInt(page) - 1) * parseInt(limit),
@@ -219,15 +222,18 @@ router.get('/training-history', async (req, res) => {
       sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 }
     };
     
-    const trainings = await Training.find({ 
-      userId: req.user._id, 
-      completed: true 
-    }, null, options);
+    const filter = { userId: req.user._id, completed: true };
+    if (mode === 'digits' || mode === 'abacus') {
+      filter['settings.displayMode'] = mode;
+    }
+    if (from || to) {
+      filter['createdAt'] = {};
+      if (from) filter['createdAt'].$gte = new Date(from);
+      if (to) filter['createdAt'].$lte = new Date(to);
+    }
+    const trainings = await Training.find(filter, null, options);
     
-    const total = await Training.countDocuments({ 
-      userId: req.user._id, 
-      completed: true 
-    });
+    const total = await Training.countDocuments(filter);
     
     res.json({
       success: true,
@@ -513,6 +519,40 @@ router.get('/export/history', protect, authorize('admin'), async (req, res) => {
     res.status(200).send(csv);
   } catch (e) {
     console.error('Export history error:', e);
+    res.status(500).json({ error: { message: 'Ошибка экспорта' } });
+  }
+});
+
+// Экспорт истории текущего пользователя (для HistoryPage)
+router.get('/export/my-history', async (req, res) => {
+  try {
+    const { from, to, mode } = req.query;
+    const q = { userId: req.user._id, completed: true };
+    if (mode === 'digits' || mode === 'abacus') q['settings.displayMode'] = mode;
+    if (from || to) {
+      q.createdAt = {};
+      if (from) q.createdAt.$gte = new Date(from);
+      if (to) q.createdAt.$lte = new Date(to);
+    }
+    const rows = await Training.find(q).sort({ createdAt: 1 });
+    const header = 'date,mode,operations,numbersCount,range,total,correct,accuracy,score\n';
+    const body = rows.map(r => [
+      new Date(r.createdAt).toISOString(),
+      r.settings.displayMode,
+      (r.settings.operations || []).join(''),
+      r.settings.numbersCount,
+      `1-${r.settings.numberRange}`,
+      r.results.totalProblems,
+      r.results.correctAnswers,
+      r.results.accuracy,
+      r.results.score
+    ].join(',')).join('\n');
+    const csv = header + body;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="my-history.csv"');
+    res.status(200).send(csv);
+  } catch (e) {
+    console.error('Export my history error:', e);
     res.status(500).json({ error: { message: 'Ошибка экспорта' } });
   }
 });

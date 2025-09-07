@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, CircularProgress, Alert, Button, Stack, Chip } from '@mui/material';
+import { Box, Typography, Paper, CircularProgress, Alert, Button, Stack, Chip, ToggleButton, ToggleButtonGroup, TextField } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import axios from 'axios';
 
@@ -27,11 +27,18 @@ const HistoryPage: React.FC = () => {
   const [items, setItems] = useState<TrainingItem[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [mode, setMode] = useState<'all' | 'digits' | 'abacus'>('all');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
 
   const load = async (p = 1) => {
     try {
       setLoading(true);
-      const res = await axios.get('/user/training-history', { params: { page: p, limit: 10 } });
+      const params: any = { page: p, limit: 10 };
+      if (mode !== 'all') params.mode = mode;
+      if (from) params.from = from;
+      if (to) params.to = new Date(to).toISOString();
+      const res = await axios.get('/user/training-history', { params });
       setItems(res.data?.data?.trainings || []);
       setTotal(res.data?.data?.pagination?.total || 0);
       setPage(res.data?.data?.pagination?.current || p);
@@ -49,9 +56,55 @@ const HistoryPage: React.FC = () => {
   const hasPrev = page > 1;
   const hasNext = page * 10 < total;
 
+  const setDays = (days: number) => {
+    const end = new Date();
+    const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    setFrom(start.toISOString().slice(0, 10));
+    setTo(end.toISOString().slice(0, 10));
+  };
+
   return (
     <Box p={3}>
       <Typography variant="h4" sx={{ mb: 2 }}>История тренировок</Typography>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2 }}>
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={mode}
+          onChange={(_, val) => { if (val) { setMode(val); load(1); } }}
+        >
+          <ToggleButton value="all">Все</ToggleButton>
+          <ToggleButton value="digits">Цифры</ToggleButton>
+          <ToggleButton value="abacus">Абакус</ToggleButton>
+        </ToggleButtonGroup>
+        <TextField label="С" type="date" size="small" value={from} onChange={(e) => setFrom(e.target.value)} InputLabelProps={{ shrink: true }} />
+        <TextField label="По" type="date" size="small" value={to} onChange={(e) => setTo(e.target.value)} InputLabelProps={{ shrink: true }} />
+        <Button variant="contained" onClick={() => load(1)}>Применить</Button>
+        <Button variant="text" onClick={() => { setMode('all'); setFrom(''); setTo(''); load(1); }}>Сбросить</Button>
+        <Button variant="outlined" onClick={() => { setDays(7); }}>7 дней</Button>
+        <Button variant="outlined" onClick={() => { setDays(30); }}>30 дней</Button>
+        <Button
+          variant="outlined"
+          onClick={async () => {
+            const params: any = {};
+            if (mode !== 'all') params.mode = mode;
+            if (from) params.from = from;
+            if (to) params.to = new Date(to).toISOString();
+            const res = await axios.get('/user/export/my-history', { responseType: 'blob', params });
+            const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'my-history.csv');
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          }}
+        >
+          Экспорт выборки
+        </Button>
+      </Stack>
       {loading ? (
         <CircularProgress />
       ) : error ? (

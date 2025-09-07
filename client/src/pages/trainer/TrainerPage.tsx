@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Tooltip,
   useTheme,
   useMediaQuery,
   Stack,
@@ -29,6 +30,7 @@ import {
   Stop,
   Settings,
   Calculate,
+  InfoOutlined,
 } from '@mui/icons-material';
 import { useUser } from '../../contexts/UserContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -126,6 +128,7 @@ const TrainerPage: React.FC = () => {
 
   // Локальное состояние для настроек
   const [localSettings, setLocalSettings] = useState(DEFAULT_SETTINGS);
+  const [showHelp, setShowHelp] = useState(false);
 
   const problemTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -767,7 +770,10 @@ const TrainerPage: React.FC = () => {
           </Box>
           {/* Количество примеров */}
           <FormControl fullWidth>
-            <FormLabel>Количество примеров: {currentSettings.totalProblems}</FormLabel>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <FormLabel>Количество примеров: {currentSettings.totalProblems}</FormLabel>
+              <Tooltip title="Сколько задач будет показано за одну сессию (1–100)"><InfoOutlined fontSize="small" sx={{ color: 'text.secondary' }} /></Tooltip>
+            </Box>
             <Slider
               value={currentSettings.totalProblems}
               onChange={(_, value) => setLocalOnly({ totalProblems: value as number })}
@@ -794,7 +800,10 @@ const TrainerPage: React.FC = () => {
           </FormControl>
 
           <FormControl fullWidth>
-            <FormLabel>Количество чисел: {currentSettings.numbersCount}</FormLabel>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <FormLabel>Количество чисел: {currentSettings.numbersCount}</FormLabel>
+              <Tooltip title="Сколько чисел в одном примере (2–15). В последовательном режиме показываются по одному."><InfoOutlined fontSize="small" sx={{ color: 'text.secondary' }} /></Tooltip>
+            </Box>
             <Slider
               value={currentSettings.numbersCount}
               onChange={(_, value) => setLocalOnly({ numbersCount: value as number })}
@@ -814,7 +823,10 @@ const TrainerPage: React.FC = () => {
           </FormControl>
           
           <FormControl fullWidth>
-            <FormLabel>Диапазон чисел</FormLabel>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <FormLabel>Диапазон чисел</FormLabel>
+              <Tooltip title="Максимум и минимум для генерируемых чисел. Для 1000–1 000 000 используется нижняя граница 1000."><InfoOutlined fontSize="small" sx={{ color: 'text.secondary' }} /></Tooltip>
+            </Box>
             <Select
               value={`${currentSettings.numberRange}:${currentSettings.numberRangeMin}`}
               onChange={(e) => {
@@ -831,7 +843,10 @@ const TrainerPage: React.FC = () => {
           
           {/* Режим законов */}
           <FormControl fullWidth>
-            <FormLabel>Режим законов</FormLabel>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <FormLabel>Режим законов</FormLabel>
+              <Tooltip title="Законы на 5/10 — специальные примеры для тренировки правил сложения/вычитания."><InfoOutlined fontSize="small" sx={{ color: 'text.secondary' }} /></Tooltip>
+            </Box>
             <Select
               value={currentSettings.lawsMode}
               onChange={(e) => handleSettingsChange({ lawsMode: e.target.value as LawsMode })}
@@ -844,7 +859,10 @@ const TrainerPage: React.FC = () => {
           </FormControl>
 
           <FormControl fullWidth>
-            <FormLabel>Скорость показа: {currentSettings.displaySpeed} мс</FormLabel>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <FormLabel>Скорость показа: {currentSettings.displaySpeed} мс</FormLabel>
+              <Tooltip title="Время показа одного шага/строки. Меньше — быстрее."><InfoOutlined fontSize="small" sx={{ color: 'text.secondary' }} /></Tooltip>
+            </Box>
             <Slider
               value={currentSettings.displaySpeed}
               onChange={(_, value) => setLocalOnly({ displaySpeed: value as number })}
@@ -859,7 +877,10 @@ const TrainerPage: React.FC = () => {
 
           {/* Паузы */}
           <FormControl fullWidth>
-            <FormLabel>Пауза перед стартом: {(currentSettings as any).preStartPause}s</FormLabel>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <FormLabel>Пауза перед стартом: {(currentSettings as any).preStartPause}s</FormLabel>
+              <Tooltip title="Задержка перед началом показа — чтобы подготовиться."><InfoOutlined fontSize="small" sx={{ color: 'text.secondary' }} /></Tooltip>
+            </Box>
             <Slider
               value={(currentSettings as any).preStartPause}
               onChange={(_, value) => setLocalOnly({ preStartPause: value as number } as any)}
@@ -873,7 +894,10 @@ const TrainerPage: React.FC = () => {
           </FormControl>
 
             <FormControl fullWidth>
-              <FormLabel>Время для ответа: {(currentSettings as any).answerPause}s</FormLabel>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormLabel>Время для ответа: {(currentSettings as any).answerPause}s</FormLabel>
+                <Tooltip title="Автоматическая отправка ответа по истечении времени."><InfoOutlined fontSize="small" sx={{ color: 'text.secondary' }} /></Tooltip>
+              </Box>
               <Slider
                 value={(currentSettings as any).answerPause}
                 onChange={(_, value) => setLocalOnly({ answerPause: value as number } as any)}
@@ -887,7 +911,10 @@ const TrainerPage: React.FC = () => {
             </FormControl>
 
             <FormControl fullWidth>
-              <FormLabel>Пауза показа результата: {(currentSettings as any).resultPause}s</FormLabel>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormLabel>Пауза показа результата: {(currentSettings as any).resultPause}s</FormLabel>
+                <Tooltip title="Сколько времени держать результат перед переходом к следующему примеру."><InfoOutlined fontSize="small" sx={{ color: 'text.secondary' }} /></Tooltip>
+              </Box>
               <Slider
                 value={(currentSettings as any).resultPause}
                 onChange={(_, value) => setLocalOnly({ resultPause: value as number } as any)}
@@ -923,7 +950,10 @@ const TrainerPage: React.FC = () => {
           
           {/* Визуальные опции */}
           <Box>
-            <FormLabel>Визуализация</FormLabel>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <FormLabel>Визуализация</FormLabel>
+              <Tooltip title="Настройки внешнего вида чисел: размер, случайные позиция и цвет."><InfoOutlined fontSize="small" sx={{ color: 'text.secondary' }} /></Tooltip>
+            </Box>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 1 }}>
               <FormControl fullWidth>
                 <FormLabel>Размер шрифта</FormLabel>
@@ -958,7 +988,10 @@ const TrainerPage: React.FC = () => {
               </FormControl>
             </Stack>
             <FormControl sx={{ mt: 2 }}>
-              <FormLabel>Показывать действия последовательно</FormLabel>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <FormLabel>Показывать действия последовательно</FormLabel>
+                <Tooltip title="Показывать числа по одному шагу (число → знак и число → ...)"><InfoOutlined fontSize="small" sx={{ color: 'text.secondary' }} /></Tooltip>
+              </Box>
               <Select
                 value={(currentSettings as any).sequentialDisplay ? 'yes' : 'no'}
                 onChange={(e) => handleSettingsChange({ sequentialDisplay: e.target.value === 'yes' })}
@@ -970,7 +1003,10 @@ const TrainerPage: React.FC = () => {
           </Box>
           
           <FormControl>
-            <FormLabel>Режим отображения</FormLabel>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <FormLabel>Режим отображения</FormLabel>
+              <Tooltip title="Цифры — обычная запись, Абакус — визуализация на счётах."><InfoOutlined fontSize="small" sx={{ color: 'text.secondary' }} /></Tooltip>
+            </Box>
             <Select
               value={currentSettings.displayMode}
               onChange={(e) => handleSettingsChange({ displayMode: e.target.value as 'digits' | 'abacus' })}
@@ -1037,7 +1073,27 @@ const TrainerPage: React.FC = () => {
               >
                 Настройки
               </Button>
+              <Button
+                variant="text"
+                size="large"
+                onClick={() => setShowHelp(true)}
+                sx={{ ml: 1 }}
+              >
+                ℹ️ Помощь
+              </Button>
             </Box>
+          </Paper>
+
+          {/* Быстрые пресеты */}
+          <Paper sx={{ p: 2, mb: 3, maxWidth: '700px', mx: 'auto' }}>
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>Быстрый старт</Typography>
+            <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap">
+              <Chip label="Лёгкий (1-10, 2 числа)" onClick={() => handleSettingsChange({ numberRange: 10, numberRangeMin: 1, numbersCount: 2, operations: ['+'], displayMode: 'digits' })} />
+              <Chip label="Стандарт (1-100, 3 числа)" onClick={() => handleSettingsChange({ numberRange: 100, numberRangeMin: 1, numbersCount: 3, operations: ['+','-'], displayMode: 'digits' })} />
+              <Chip label="Абакус (1-100, 3)" onClick={() => handleSettingsChange({ displayMode: 'abacus', numberRange: 100, numberRangeMin: 1, numbersCount: 3 })} />
+              <Chip label="Скорость x2" onClick={() => handleSettingsChange({ displaySpeed: Math.max(100, Math.floor(currentSettings.displaySpeed / 2)) })} />
+              <Chip label="Сброс визуализации" onClick={() => handleSettingsChange({ fontScale: 1, randomPosition: false, randomColor: false, sequentialDisplay: false })} />
+            </Stack>
           </Paper>
 
           {/* Статистика пользователя (из UserContext) */}
@@ -1121,6 +1177,24 @@ const TrainerPage: React.FC = () => {
 
       {/* Настройки */}
       {renderSettings()}
+
+      {/* Диалог помощи */}
+      <Dialog open={showHelp} onClose={() => setShowHelp(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Как тренироваться</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            1) Выберите режим: цифры или абакус. 2) Задайте количество примеров и чисел в примере.
+            3) Выберите диапазон, операции и скорость. 4) Включите последовательный показ, если надо.
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Советы: используйте паузу перед стартом для концентрации; увеличивайте шрифт или включайте случайный
+            цвет/позицию для усложнения; историю и результаты смотрите в разделе Статистика → История.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowHelp(false)}>Понятно</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

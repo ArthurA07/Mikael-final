@@ -49,6 +49,7 @@ const Navbar: React.FC = () => {
     { text: '🎯 Тренажёр', path: '/trainer', icon: <Calculate />, public: true },
     { text: '🧮 Абакус', path: '/abacus', icon: <ViewModule />, public: true },
     { text: 'ℹ️ О тренажёре', path: '/about', icon: <EmojiEvents />, public: true },
+    { text: '📜 История', path: '/stats/history', icon: <BarChart />, public: false },
     { text: '🏆 Достижения', path: '/achievements', icon: <EmojiEvents />, public: false },
     { text: '📈 Статистика', path: '/stats', icon: <BarChart />, public: false },
     { text: '👤 Профиль', path: '/profile', icon: <Person />, public: false },
