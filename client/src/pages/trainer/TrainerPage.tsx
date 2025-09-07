@@ -700,6 +700,39 @@ const TrainerPage: React.FC = () => {
           >
             Завершить
           </Button>
+          {problems.some(p => p.isCorrect === false) && (
+            <Button
+              variant="text"
+              size="large"
+              sx={{ ml: 2 }}
+              onClick={() => {
+                const wrong = problems.filter(p => p.isCorrect === false);
+                const session: TrainingSession = {
+                  problems: wrong.map(p => ({ numbers: p.numbers, operation: p.operation, correctAnswer: p.correctAnswer } as any)),
+                  currentProblemIndex: 0,
+                  startTime: Date.now(),
+                  accuracy: 0,
+                  totalTime: 0,
+                  averageTime: 0,
+                  score: 0,
+                };
+                setState(prev => ({
+                  ...prev,
+                  isTraining: true,
+                  currentSession: session,
+                  currentProblem: session.problems[0],
+                  currentStep: 'showing',
+                  showProblem: true,
+                  problemStartTime: Date.now(),
+                  timeLeft: currentSettings.displaySpeed,
+                  sequentialIndex: 0,
+                  userAnswer: '',
+                }));
+              }}
+            >
+              Повторить ошибки
+            </Button>
+          )}
         </Box>
       </Box>
     );
