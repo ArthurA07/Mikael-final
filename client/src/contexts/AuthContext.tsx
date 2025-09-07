@@ -7,6 +7,7 @@ interface User {
   _id: string;
   name: string;
   email: string;
+  role?: 'user' | 'admin';
   phone?: string;
   avatar?: string;
   isEmailVerified: boolean;

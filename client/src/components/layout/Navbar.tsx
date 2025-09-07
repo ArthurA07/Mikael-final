@@ -51,6 +51,7 @@ const Navbar: React.FC = () => {
     { text: '🏆 Достижения', path: '/achievements', icon: <EmojiEvents />, public: false },
     { text: '📈 Статистика', path: '/stats', icon: <BarChart />, public: false },
     { text: '👤 Профиль', path: '/profile', icon: <Person />, public: false },
+    ...(user?.role === 'admin' ? [{ text: '🛡️ Админ', path: '/admin', icon: <DashboardIcon />, public: false }] : []),
   ];
 
   const handleDrawerToggle = () => {
