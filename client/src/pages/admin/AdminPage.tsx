@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Button, Card, CardContent, Chip, IconButton, InputAdornment, Pagination, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Button, Card, CardContent, Chip, IconButton, InputAdornment, Pagination, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography, Dialog, DialogTitle, DialogContent, DialogActions, useMediaQuery } from '@mui/material';
 import { Search, FileDownload, Refresh } from '@mui/icons-material';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -23,6 +23,9 @@ const AdminPage: React.FC = () => {
   const [resetPassword, setResetPassword] = useState('');
   const [resetPassword2, setResetPassword2] = useState('');
   const [resetError, setResetError] = useState('');
+  const [from, setFrom] = useState<string>('');
+  const [to, setTo] = useState<string>('');
+  const isMobile = useMediaQuery('(max-width:900px)');
 
   const load = useMemo(() => async () => {
     setLoading(true);
@@ -42,12 +45,16 @@ const AdminPage: React.FC = () => {
 
   const handleExport = async (userId: string) => {
     // Запрашиваем CSV с авторизацией и скачиваем как файл
-    const res = await axios.get(`/admin/users/${userId}/export`, { responseType: 'blob' });
+    const params: any = {};
+    if (from) params.from = from;
+    if (to) params.to = to ? dayjs(to).endOf('day').toISOString() : undefined;
+    const res = await axios.get(`/admin/users/${userId}/export`, { responseType: 'blob', params });
     const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'history.csv');
+    const periodSuffix = from || to ? `_${from || '...'}_${to || '...'}` : '';
+    link.setAttribute('download', `history${periodSuffix}.csv`);
     document.body.appendChild(link);
     link.click();
     link.parentNode?.removeChild(link);
@@ -106,40 +113,98 @@ const AdminPage: React.FC = () => {
               }}
               size="small"
             />
+            <TextField
+              label="С"
+              type="date"
+              size="small"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="По"
+              type="date"
+              size="small"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
             <Button variant="contained" onClick={() => { setPage(1); load(); }}>Искать</Button>
             <IconButton onClick={() => { setQ(''); setPage(1); load(); }}><Refresh /></IconButton>
             <Chip label={`Стр. ${page} / ${totalPages}`} color="primary" />
+            <Button
+              variant="outlined"
+              onClick={async () => {
+                const params: any = {};
+                if (from) params.from = from;
+                if (to) params.to = dayjs(to).endOf('day').toISOString();
+                const res = await axios.get('/admin/export', { responseType: 'blob', params });
+                const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                const suffix = from || to ? `_${from || '...'}_${to || '...'}` : '';
+                link.setAttribute('download', `all-history${suffix}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                link.parentNode?.removeChild(link);
+                window.URL.revokeObjectURL(url);
+              }}
+            >
+              Экспорт всех
+            </Button>
           </Box>
         </CardContent>
       </Card>
 
       <Card sx={{ mt: 2 }}>
         <CardContent>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Имя</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Роль</TableCell>
-                <TableCell>Создан</TableCell>
-                <TableCell align="right">Действия</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+          {!isMobile ? (
+            <>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Имя</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Роль</TableCell>
+                    <TableCell>Создан</TableCell>
+                    <TableCell align="right">Действия</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {users.map((u) => (
+                    <TableRow key={u._id} hover>
+                      <TableCell>{u.name}</TableCell>
+                      <TableCell>{u.email}</TableCell>
+                      <TableCell>{u.role}</TableCell>
+                      <TableCell>{dayjs(u.createdAt).format('YYYY-MM-DD HH:mm')}</TableCell>
+                      <TableCell align="right">
+                        <Button size="small" variant="outlined" startIcon={<FileDownload />} onClick={() => handleExport(u._id)}>Экспорт</Button>
+                        <Button size="small" sx={{ ml: 1 }} variant="contained" color="warning" onClick={() => openResetPassword(u._id)}>Сброс пароля</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
+          ) : (
+            <Box sx={{ display: 'grid', gap: 1 }}>
               {users.map((u) => (
-                <TableRow key={u._id} hover>
-                  <TableCell>{u.name}</TableCell>
-                  <TableCell>{u.email}</TableCell>
-                  <TableCell>{u.role}</TableCell>
-                  <TableCell>{dayjs(u.createdAt).format('YYYY-MM-DD HH:mm')}</TableCell>
-                  <TableCell align="right">
-                    <Button size="small" variant="outlined" startIcon={<FileDownload />} onClick={() => handleExport(u._id)}>Экспорт</Button>
-                    <Button size="small" sx={{ ml: 1 }} variant="contained" color="warning" onClick={() => openResetPassword(u._id)}>Сброс пароля</Button>
-                  </TableCell>
-                </TableRow>
+                <Card key={u._id} variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{u.name}</Typography>
+                    <Typography variant="body2">{u.email}</Typography>
+                    <Chip label={u.role} size="small" sx={{ mt: 1 }} />
+                    <Typography variant="caption" sx={{ display: 'block', mt: 1 }}>Создан: {dayjs(u.createdAt).format('YYYY-MM-DD HH:mm')}</Typography>
+                    <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                      <Button size="small" variant="outlined" startIcon={<FileDownload />} onClick={() => handleExport(u._id)}>Экспорт</Button>
+                      <Button size="small" variant="contained" color="warning" onClick={() => openResetPassword(u._id)}>Сброс</Button>
+                    </Box>
+                  </CardContent>
+                </Card>
               ))}
-            </TableBody>
-          </Table>
+            </Box>
+          )}
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
             <Pagination count={totalPages} page={page} onChange={(_, p) => setPage(p)} />
           </Box>

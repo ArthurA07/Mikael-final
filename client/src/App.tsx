@@ -26,6 +26,7 @@ import StatsPage from './pages/stats/StatsPage';
 import HistoryPage from './pages/stats/HistoryPage';
 import TrainingDetailPage from './pages/stats/TrainingDetailPage';
 import AdminPage from './pages/admin/AdminPage';
+import AboutTrainer from './pages/AboutTrainer';
 
 // Создаём тему для приложения
 const theme = createTheme({
@@ -295,6 +296,7 @@ function App() {
                 <Route path="/data-consent" element={<LegalDataConsent />} />
                 <Route path="/user-agreement" element={<LegalUserAgreement />} />
                 <Route path="/public-offer" element={<LegalPublicOffer />} />
+                <Route path="/about" element={<AboutTrainer />} />
                 
                 {/* Защищённые маршруты */}
                 <Route path="/dashboard" element={

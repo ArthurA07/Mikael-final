@@ -2,6 +2,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+const morgan = require('morgan');
 const path = require('path');
 require('dotenv').config();
 
@@ -17,6 +21,12 @@ const app = express();
 const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').filter(Boolean);
 app.use(cors(allowedOrigins.length ? { origin: allowedOrigins, credentials: true } : {}));
 app.use(express.json({ limit: '10mb' }));
+app.use(helmet());
+app.use(mongoSanitize());
+app.use(xss());
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('dev'));
+}
 
 // Staging noindex header to prevent accidental indexing
 app.use((req, res, next) => {

@@ -106,4 +106,48 @@ router.get('/users/:id/export', async (req, res) => {
 
 module.exports = router;
 
+// Экспорт всех пользователей за период в CSV
+router.get('/export', async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    const dateFilter = {};
+    if (from || to) {
+      dateFilter.createdAt = {};
+      if (from) dateFilter.createdAt.$gte = new Date(from);
+      if (to) dateFilter.createdAt.$lte = new Date(to);
+    }
+
+    // Находим тренировки за период
+    const trainings = await Training.find({ ...(dateFilter.createdAt ? { createdAt: dateFilter.createdAt } : {}) })
+      .sort({ userId: 1, createdAt: 1 });
+
+    const header = 'userEmail,date,mode,operations,numbersCount,range,total,correct,accuracy,score\n';
+    // буфер пользователей, чтобы получить email
+    const userIds = [...new Set(trainings.map(t => String(t.userId)))];
+    const users = await User.find({ _id: { $in: userIds } }).select('email');
+    const idToEmail = new Map(users.map(u => [String(u._id), u.email]));
+
+    const body = trainings.map(r => [
+      idToEmail.get(String(r.userId)) || '',
+      new Date(r.createdAt).toISOString(),
+      r.settings.displayMode,
+      (r.settings.operations || []).join(''),
+      r.settings.numbersCount,
+      `1-${r.settings.numberRange}`,
+      r.results.totalProblems,
+      r.results.correctAnswers,
+      r.results.accuracy,
+      r.results.score
+    ].join(',')).join('\n');
+
+    const csv = header + body;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="all-history.csv"');
+    res.status(200).send(csv);
+  } catch (e) {
+    console.error('Admin export all error:', e);
+    res.status(500).json({ error: { message: 'Ошибка экспорта' } });
+  }
+});
+
 
