@@ -31,13 +31,13 @@ const HistoryPage: React.FC = () => {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
 
-  const load = async (p = 1) => {
+  const load = async (p = 1, m: 'all'|'digits'|'abacus' = mode, f: string = from, t: string = to) => {
     try {
       setLoading(true);
       const params: any = { page: p, limit: 10 };
-      if (mode !== 'all') params.mode = mode;
-      if (from) params.from = from;
-      if (to) params.to = new Date(to).toISOString();
+      if (m !== 'all') params.mode = m;
+      if (f) params.from = f;
+      if (t) params.to = new Date(t).toISOString();
       const res = await axios.get('/user/training-history', { params });
       setItems(res.data?.data?.trainings || []);
       setTotal(res.data?.data?.pagination?.total || 0);
@@ -71,7 +71,7 @@ const HistoryPage: React.FC = () => {
           size="small"
           exclusive
           value={mode}
-          onChange={(_, val) => { if (val) { setMode(val); load(1); } }}
+          onChange={(_, val) => { if (val) { setMode(val); load(1, val, from, to); } }}
         >
           <ToggleButton value="all">Все</ToggleButton>
           <ToggleButton value="digits">Цифры</ToggleButton>
