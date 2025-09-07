@@ -10,10 +10,10 @@ import {
   Tooltip as ChartTooltip,
   Legend,
 } from 'chart.js';
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ChartTooltip, Legend);
 import { Link as RouterLink } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ChartTooltip, Legend);
 
 const StatsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
