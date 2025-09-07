@@ -21,12 +21,28 @@ const app = express();
 const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').filter(Boolean);
 app.use(cors(allowedOrigins.length ? { origin: allowedOrigins, credentials: true } : {}));
 app.use(express.json({ limit: '10mb' }));
-app.use(helmet());
+// Helmet + CSP (безопасные дефолты; доп. источники можно задать через env CSP_CONNECT_SRC="https://mikael-final.onrender.com")
+app.use(helmet({
+  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
+    useDefaults: true,
+    directives: {
+      "default-src": ["'self'"],
+      "script-src": ["'self'"],
+      "style-src": ["'self'", "'unsafe-inline'"],
+      "img-src": ["'self'", 'data:', 'blob:'],
+      "connect-src": ["'self'", ...((process.env.CSP_CONNECT_SRC || 'https:').split(',').map(s => s.trim()).filter(Boolean))],
+      "object-src": ["'none'"],
+      "frame-ancestors": ["'none'"],
+      "upgrade-insecure-requests": [],
+    },
+  } : undefined,
+}));
 app.use(mongoSanitize());
 app.use(xss());
-if (process.env.NODE_ENV !== 'production') {
-  app.use(morgan('dev'));
-}
+// Request ID для логов
+morgan.token('rid', (req) => req.id || '-');
+app.use((req, res, next) => { try { req.id = require('crypto').randomUUID(); } catch {} next(); });
+app.use(morgan(process.env.NODE_ENV !== 'production' ? ':rid :method :url :status :response-time ms' : ':rid :method :url :status :response-time ms'));
 
 // Staging noindex header to prevent accidental indexing
 app.use((req, res, next) => {
@@ -37,11 +53,12 @@ app.use((req, res, next) => {
 });
 
 // Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use('/api/', limiter);
+const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 300 });
+const loginLimiter = rateLimit({ windowMs: 60 * 1000, max: 5 });
+const forgotLimiter = rateLimit({ windowMs: 60 * 1000, max: 3 });
+app.use('/api/', apiLimiter);
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth/forgot-password', forgotLimiter);
 
 // Routes
 app.use('/api/auth', authRoutes);
