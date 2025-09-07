@@ -166,13 +166,14 @@ router.get('/stats', async (req, res) => {
     
     // Получаем статистику из профиля пользователя
     const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ error: { message: 'Пользователь не найден' } });
     // Последняя сессия
     const lastSession = await Training.getLastSession(req.user._id);
     
     res.json({
       success: true,
       data: {
-        profile: user.stats,
+        profile: user.stats || { totalExercises:0, correctAnswers:0, totalTime:0, bestAccuracy:0, level:1 },
         training: trainingStats,
         achievements: user.achievements,
         lastSession

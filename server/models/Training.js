@@ -230,9 +230,9 @@ trainingSchema.statics.getUserProgress = async function(userId, days = 30) {
           $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
         },
         sessions: { $sum: 1 },
-        accuracy: { $avg: '$results.accuracy' },
-        totalTime: { $sum: '$results.totalTime' },
-        score: { $sum: '$results.score' }
+        accuracy: { $avg: { $ifNull: ['$results.accuracy', 0] } },
+        totalTime: { $sum: { $ifNull: ['$results.totalTime', 0] } },
+        score: { $sum: { $ifNull: ['$results.score', 0] } }
       }
     },
     { $sort: { '_id': 1 } }
