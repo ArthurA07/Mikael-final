@@ -1,5 +1,17 @@
 const mongoose = require('mongoose');
 
+// Безопасное приведение к ObjectId
+function toObjectId(id) {
+  if (!id) return id;
+  if (id instanceof mongoose.Types.ObjectId) return id;
+  if (typeof id === 'string') return new mongoose.Types.ObjectId(id);
+  try {
+    return new mongoose.Types.ObjectId(String(id));
+  } catch {
+    return id;
+  }
+}
+
 const trainingSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -156,7 +168,7 @@ trainingSchema.pre('save', function(next) {
 
 // Статические методы для получения статистики пользователя
 trainingSchema.statics.getUserStats = async function(userId, period = 'all') {
-  const matchStage = { userId: mongoose.Types.ObjectId(userId), completed: true };
+  const matchStage = { userId: toObjectId(userId), completed: true };
   
   // Добавляем фильтр по времени если нужно
   if (period !== 'all') {
@@ -219,7 +231,7 @@ trainingSchema.statics.getUserProgress = async function(userId, days = 30) {
   return await this.aggregate([
     {
       $match: {
-        userId: mongoose.Types.ObjectId(userId),
+        userId: toObjectId(userId),
         completed: true,
         createdAt: { $gte: startDate }
       }

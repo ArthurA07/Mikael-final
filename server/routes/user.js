@@ -445,9 +445,15 @@ router.get('/my-ip', async (req, res) => {
   res.json({ success: true, data: { ip, rawIp, whitelisted, whitelist } });
 });
 
-// Проверка/выдача бесплатного доступа к абакусу (по IP, 20 минут, один раз)
+// Проверка/выдача доступа к абакусу
+// Для АВТОРИЗОВАННЫХ пользователей доступ всегда разрешён (без ограничений времени/IP)
+// Для гостей сохраняем прежнюю логику бесплатного окна по IP (20 минут, один раз)
 router.post('/free-abacus', async (req, res) => {
   try {
+    // Если пользователь аутентифицирован, сразу разрешаем доступ
+    if (req.user && req.user._id) {
+      return res.json({ success: true, data: { allowed: true, reason: 'authenticated' } });
+    }
     const rawIp = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket?.remoteAddress || '').toString();
     const firstIp = rawIp.split(',')[0].trim();
     const ip = firstIp.replace('::ffff:', '');

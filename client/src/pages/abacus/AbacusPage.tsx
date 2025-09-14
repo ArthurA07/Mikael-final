@@ -13,10 +13,11 @@ const AbacusPage: React.FC = () => {
   useEffect(() => {
     const check = async () => {
       try {
-        const res = await axios.post('/user/free-abacus');
+        // Публичная проверка: для авторизованных всегда true, для гостей — 20 минут по IP
+        const res = await axios.post('/public/free-access');
         if (res.data?.success && res.data?.data?.allowed) {
           setAllowed(true);
-          setExpiresAt(res.data.data.expiresAt);
+          setExpiresAt(res.data.data.expiresAt || null);
         } else {
           setAllowed(false);
         }

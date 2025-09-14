@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import axios from 'axios';
+// axios уже импортирован выше
 import {
   Box,
   Typography,
@@ -36,6 +37,7 @@ import { useUser } from '../../contexts/UserContext';
 import { useAuth } from '../../contexts/AuthContext';
 import TrainerAbacus from '../../components/abacus/TrainerAbacus';
 import { LawsMode, generateProblemFactory } from '../../utils/problemGenerator';
+import { Container, CircularProgress } from '@mui/material';
 
 // Типы данных
 interface Problem {
@@ -112,6 +114,11 @@ const TrainerPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const { trainerSettings, updateTrainerSettings, updateUserStats, addAchievement, userStats, refreshUserStats } = useUser();
   
+  // Доступ для гостей (20 минут по IP). Для авторизованных — всегда true
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  const [guestAllowed, setGuestAllowed] = useState(false);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+
   const [state, setState] = useState<TrainerState>({
     isTraining: false,
     currentSession: null,
@@ -125,6 +132,30 @@ const TrainerPage: React.FC = () => {
     sequentialIndex: 0,
     answerTimeLeft: 0,
   });
+
+  // Проверка доступа при загрузке
+  useEffect(() => {
+    const check = async () => {
+      try {
+        if (isAuthenticated) {
+          setGuestAllowed(true);
+          return;
+        }
+        const res = await axios.post('/public/free-access');
+        if (res.data?.success && res.data?.data?.allowed) {
+          setGuestAllowed(true);
+          setExpiresAt(res.data.data.expiresAt || null);
+        } else {
+          setGuestAllowed(false);
+        }
+      } catch (e) {
+        setGuestAllowed(false);
+      } finally {
+        setCheckingAccess(false);
+      }
+    };
+    check();
+  }, [isAuthenticated]);
 
   // Локальное состояние для настроек
   const [localSettings, setLocalSettings] = useState(DEFAULT_SETTINGS);
@@ -189,6 +220,10 @@ const TrainerPage: React.FC = () => {
 
   // Начало тренировки
   const startTraining = useCallback(() => {
+    if (!isAuthenticated && !guestAllowed) {
+      alert('Бесплатный доступ для гостей завершён. Войдите или зарегистрируйтесь, чтобы продолжить без ограничений.');
+      return;
+    }
     clearCurrentTimeout();
     
     const problems: Problem[] = [];
@@ -1057,6 +1092,35 @@ const TrainerPage: React.FC = () => {
       </DialogActions>
     </Dialog>
   );
+
+  if (checkingAccess) {
+    return (
+      <Container maxWidth="sm" sx={{ py: 6 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
+  if (!isAuthenticated && !guestAllowed) {
+    return (
+      <Box sx={{ p: 3, maxWidth: '800px', mx: 'auto' }}>
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <Typography variant="h5" gutterBottom>
+            Бесплатный доступ к тренажёру уже использован
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            Войдите в аккаунт или зарегистрируйтесь, чтобы продолжить занятия без ограничений.
+          </Typography>
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button variant="contained" href="/login">Войти</Button>
+            <Button variant="outlined" href="/register">Зарегистрироваться</Button>
+          </Stack>
+        </Paper>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: 3, maxWidth: '1200px', mx: 'auto' }}>
