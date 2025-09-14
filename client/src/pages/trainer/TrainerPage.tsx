@@ -888,12 +888,11 @@ const TrainerPage: React.FC = () => {
               min={2}
               max={15}
               step={1}
-              marks={[
-                { value: 2, label: '2' },
-                { value: 5, label: '5' },
-                { value: 10, label: '10' },
-                { value: 15, label: '15' },
-              ]}
+              marks={Array.from({ length: 14 }, (_, i) => {
+                const v = i + 2; // 2..15
+                const major = [2,5,10,15].includes(v);
+                return major ? { value: v, label: String(v) } : { value: v } as any;
+              })}
               valueLabelDisplay="auto"
               sx={{ mt: 2 }}
             />
@@ -949,8 +948,16 @@ const TrainerPage: React.FC = () => {
               step={100}
               marks={[
                 { value: 500, label: '0.5с' },
+                { value: 1000, label: '1с' },
                 { value: 2000, label: '2с' },
+                { value: 3000, label: '3с' },
+                { value: 4000, label: '4с' },
                 { value: 5000, label: '5с' },
+                { value: 6000, label: '6с' },
+                { value: 7000, label: '7с' },
+                { value: 8000, label: '8с' },
+                { value: 9000, label: '9с' },
+                { value: 10000, label: '10с' },
               ]}
               valueLabelDisplay="auto"
             />
@@ -973,7 +980,10 @@ const TrainerPage: React.FC = () => {
                 { value: 0, label: '0с' },
                 { value: 5, label: '5с' },
                 { value: 10, label: '10с' },
+                { value: 20, label: '20с' },
                 { value: 30, label: '30с' },
+                { value: 40, label: '40с' },
+                { value: 50, label: '50с' },
                 { value: 60, label: '60с' },
               ]}
               valueLabelDisplay="auto"
@@ -993,14 +1003,8 @@ const TrainerPage: React.FC = () => {
                 max={120}
                 step={1}
                 marks={[
-                  { value: 0, label: '0с' },
-                  { value: 5, label: '5с' },
-                  { value: 10, label: '10с' },
-                  { value: 20, label: '20с' },
-                  { value: 30, label: '30с' },
-                  { value: 60, label: '60с' },
-                  { value: 120, label: '120с' },
-                ]}
+                  0,5,10,20,30,40,50,60,70,80,90,100,110,120
+                ].map(v => ({ value: v, label: `${v}с` }))}
                 valueLabelDisplay="auto"
               />
             </FormControl>
@@ -1017,14 +1021,7 @@ const TrainerPage: React.FC = () => {
                 min={0}
                 max={60}
                 step={1}
-                marks={[
-                  { value: 0, label: '0с' },
-                  { value: 3, label: '3с' },
-                  { value: 5, label: '5с' },
-                  { value: 10, label: '10с' },
-                  { value: 30, label: '30с' },
-                  { value: 60, label: '60с' },
-                ]}
+                marks={[0,5,10,20,30,40,50,60].map(v => ({ value: v, label: `${v}с` }))}
                 valueLabelDisplay="auto"
               />
             </FormControl>
