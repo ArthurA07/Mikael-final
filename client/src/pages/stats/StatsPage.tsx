@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, CircularProgress, Alert, Button, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Box, Typography, Paper, CircularProgress, Alert, Button, ToggleButton, ToggleButtonGroup, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,6 +10,8 @@ const StatsPage: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const { isLoading, isAuthenticated } = useAuth();
   const [period, setPeriod] = useState<'week' | 'month' | 'all'>('all');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   
 
   useEffect(() => {
@@ -30,6 +32,21 @@ const StatsPage: React.FC = () => {
       load();
     }
   }, [isLoading, isAuthenticated, period]);
+
+  const resetStats = async (withHistory: boolean) => {
+    try {
+      setResetLoading(true);
+      await axios.post('/user/stats/reset', { deleteHistory: withHistory });
+      // Перезагружаем статистику
+      const res = await axios.get('/user/stats', { params: { period } });
+      setData(res.data?.data);
+    } catch (e) {
+      // no-op; можно добавить уведомление
+    } finally {
+      setResetLoading(false);
+      setConfirmOpen(false);
+    }
+  };
 
   return (
     <Box p={3}>
@@ -75,6 +92,11 @@ const StatsPage: React.FC = () => {
                 <Typography color="text.secondary">Лучшая точность</Typography>
                 <Typography variant="h5">{data?.profile?.bestAccuracy ?? 0}%</Typography>
               </Box>
+            </Box>
+            <Box sx={{ mt: 2 }}>
+              <Button variant="text" color="error" onClick={() => setConfirmOpen(true)}>
+                Сбросить статистику
+              </Button>
             </Box>
           </Paper>
 
@@ -132,6 +154,19 @@ const StatsPage: React.FC = () => {
           )}
 
           
+          <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+            <DialogTitle>Сбросить статистику?</DialogTitle>
+            <DialogContent>
+              <Typography variant="body2">
+                Можно сбросить только агрегаты профиля или также удалить историю тренировок.
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setConfirmOpen(false)} disabled={resetLoading}>Отмена</Button>
+              <Button onClick={() => resetStats(false)} disabled={resetLoading}>Сбросить только статистику</Button>
+              <Button color="error" onClick={() => resetStats(true)} disabled={resetLoading}>Сбросить и удалить историю</Button>
+            </DialogActions>
+          </Dialog>
         </>
       )}
     </Box>

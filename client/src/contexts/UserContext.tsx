@@ -31,6 +31,15 @@ interface UserStats {
   experiencePoints: number;
 }
 
+// Пэйлоад на обновление статистики: разрешаем инкременты, поддерживаем серверный контракт
+type UpdateUserStatsPayload = Partial<UserStats> & {
+  incTotalExercises?: number;
+  incCorrectAnswers?: number;
+  incTotalTime?: number;
+  // Можно передавать точность отдельно, сервер обновит bestAccuracy при необходимости
+  accuracy?: number;
+};
+
 // Типы для достижений
 interface Achievement {
   id: string;
@@ -53,7 +62,7 @@ interface UserContextType {
   
   // Функции для статистики
   refreshUserStats: () => Promise<void>;
-  updateUserStats: (stats: Partial<UserStats>) => Promise<boolean>;
+  updateUserStats: (stats: UpdateUserStatsPayload) => Promise<boolean>;
   
   // Функции для достижений
   addAchievement: (achievement: Omit<Achievement, 'unlockedAt'>) => Promise<boolean>;
@@ -187,7 +196,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   };
 
   // Обновление статистики
-  const updateUserStats = async (stats: Partial<UserStats>): Promise<boolean> => {
+  const updateUserStats = async (stats: UpdateUserStatsPayload): Promise<boolean> => {
     try {
       const response = await axios.put('/user/stats', stats);
       if (response.data.success) {

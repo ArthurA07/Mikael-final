@@ -435,6 +435,30 @@ router.put('/stats', [
   }
 });
 
+// Сброс статистики пользователя (опционально с очисткой истории)
+router.post('/stats/reset', async (req, res) => {
+  try {
+    const { deleteHistory = false } = req.body || {};
+
+    // Сбрасываем агрегаты профиля
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: { 'stats.totalExercises': 0, 'stats.correctAnswers': 0, 'stats.totalTime': 0, 'stats.bestAccuracy': 0, 'stats.currentStreak': 0, 'stats.longestStreak': 0, 'stats.level': 1, 'stats.experiencePoints': 0 } },
+      { new: true }
+    );
+
+    // По запросу чистим историю тренировок
+    if (deleteHistory) {
+      await Training.deleteMany({ userId: req.user._id });
+    }
+
+    res.json({ success: true, message: 'Статистика сброшена', data: { stats: user.stats } });
+  } catch (error) {
+    console.error('Reset stats error:', error);
+    res.status(500).json({ error: { message: 'Ошибка при сбросе статистики' } });
+  }
+});
+
 // Технический маршрут: определить IP клиента и статус в белом списке
 router.get('/my-ip', async (req, res) => {
   const rawIp = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket?.remoteAddress || '').toString();

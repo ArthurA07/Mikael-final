@@ -332,10 +332,15 @@ const TrainerPage: React.FC = () => {
       if (isAuthenticated && user && updateUserStats && addAchievement) {
         try {
           await updateUserStats({
-            totalExercises: (user.stats?.totalExercises || 0) + 1,
+            // Увеличиваем количество решённых примеров, а не сессий
+            incTotalExercises: updatedProblems.length,
+            incCorrectAnswers: correctAnswers,
+            incTotalTime: totalTime,
+            bestAccuracy: Math.max(user.stats?.bestAccuracy || 0, accuracy),
+            // Для обратной совместимости оставим абсолютные поля, если сервер их примет
+            totalExercises: (user.stats?.totalExercises || 0) + updatedProblems.length,
             correctAnswers: (user.stats?.correctAnswers || 0) + correctAnswers,
             totalTime: (user.stats?.totalTime || 0) + totalTime,
-            bestAccuracy: Math.max(user.stats?.bestAccuracy || 0, accuracy),
           });
           // Обновляем агрегаты в контексте, чтобы виджет и /stats сразу увидели изменения
           try { await refreshUserStats(); } catch {}
