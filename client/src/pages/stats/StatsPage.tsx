@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, CircularProgress, Alert, Button, ToggleButton, ToggleButtonGroup, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Typography, Paper, CircularProgress, Alert, Button, ToggleButton, ToggleButtonGroup, Dialog, DialogTitle, DialogContent, DialogActions, LinearProgress, Stack } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
@@ -91,6 +91,34 @@ const StatsPage: React.FC = () => {
               <Box>
                 <Typography color="text.secondary">Лучшая точность</Typography>
                 <Typography variant="h5">{data?.profile?.bestAccuracy ?? 0}%</Typography>
+              </Box>
+            </Box>
+            {/* Прогресс уровня */}
+            <Box sx={{ mt: 3 }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+                <Box sx={{ minWidth: 140 }}>
+                  <Typography color="text.secondary">Уровень</Typography>
+                  <Typography variant="h5">{data?.profile?.level ?? 1}</Typography>
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  {(() => {
+                    const xp = Number(data?.profile?.experiencePoints || 0);
+                    const base = Math.floor(xp / 1000) * 1000;
+                    const next = base + 1000;
+                    const progress = Math.min(100, Math.round(((xp - base) / 1000) * 100));
+                    return (
+                      <>
+                        <Typography variant="body2" sx={{ mb: 0.5 }}>Прогресс до следующего уровня: {xp - base} / 1000 XP</Typography>
+                        <LinearProgress variant="determinate" value={progress} />
+                      </>
+                    );
+                  })()}
+                </Box>
+              </Stack>
+              <Box sx={{ mt: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Правила: опыт (XP) за сессию равен её «Счёту». Новый уровень каждые 1000 XP.
+                </Typography>
               </Box>
             </Box>
             <Box sx={{ mt: 2 }}>

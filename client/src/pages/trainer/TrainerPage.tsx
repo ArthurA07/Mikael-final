@@ -331,6 +331,8 @@ const TrainerPage: React.FC = () => {
       // Сохраняем статистику только для авторизованных пользователей
       if (isAuthenticated && user && updateUserStats && addAchievement) {
         try {
+          // Логика начисления опыта: опыт за сессию равен её «Счёту»
+          const sessionXp = Math.round(score);
           await updateUserStats({
             // Увеличиваем количество решённых примеров, а не сессий
             incTotalExercises: updatedProblems.length,
@@ -341,6 +343,8 @@ const TrainerPage: React.FC = () => {
             totalExercises: (user.stats?.totalExercises || 0) + updatedProblems.length,
             correctAnswers: (user.stats?.correctAnswers || 0) + correctAnswers,
             totalTime: (user.stats?.totalTime || 0) + totalTime,
+            experiencePoints: (user.stats?.experiencePoints || 0) + sessionXp,
+            accuracy,
           });
           // Обновляем агрегаты в контексте, чтобы виджет и /stats сразу увидели изменения
           try { await refreshUserStats(); } catch {}
