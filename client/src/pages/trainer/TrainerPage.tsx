@@ -947,7 +947,11 @@ const TrainerPage: React.FC = () => {
               min={100}
               max={10000}
               step={100}
-              marks
+              marks={[
+                { value: 500, label: '0.5с' },
+                { value: 2000, label: '2с' },
+                { value: 5000, label: '5с' },
+              ]}
               valueLabelDisplay="auto"
             />
           </FormControl>
@@ -965,7 +969,13 @@ const TrainerPage: React.FC = () => {
               min={0}
               max={60}
               step={1}
-              marks
+              marks={[
+                { value: 0, label: '0с' },
+                { value: 5, label: '5с' },
+                { value: 10, label: '10с' },
+                { value: 30, label: '30с' },
+                { value: 60, label: '60с' },
+              ]}
               valueLabelDisplay="auto"
             />
           </FormControl>
@@ -982,7 +992,15 @@ const TrainerPage: React.FC = () => {
                 min={0}
                 max={120}
                 step={1}
-                marks
+                marks={[
+                  { value: 0, label: '0с' },
+                  { value: 5, label: '5с' },
+                  { value: 10, label: '10с' },
+                  { value: 20, label: '20с' },
+                  { value: 30, label: '30с' },
+                  { value: 60, label: '60с' },
+                  { value: 120, label: '120с' },
+                ]}
                 valueLabelDisplay="auto"
               />
             </FormControl>
@@ -999,7 +1017,14 @@ const TrainerPage: React.FC = () => {
                 min={0}
                 max={60}
                 step={1}
-                marks
+                marks={[
+                  { value: 0, label: '0с' },
+                  { value: 3, label: '3с' },
+                  { value: 5, label: '5с' },
+                  { value: 10, label: '10с' },
+                  { value: 30, label: '30с' },
+                  { value: 60, label: '60с' },
+                ]}
                 valueLabelDisplay="auto"
               />
             </FormControl>
