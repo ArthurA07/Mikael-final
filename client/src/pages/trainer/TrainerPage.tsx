@@ -257,6 +257,8 @@ const TrainerPage: React.FC = () => {
     
     const prePauseMs = ((currentSettings as any).preStartPause || 0) * 1000;
     if (prePauseMs > 0) {
+      // Экран ожидания (перед показом): отображаем таймер обратного отсчёта/прелоадер
+      setState(prev => ({ ...prev, currentStep: 'prestart', showProblem: false }));
       problemTimeoutRef.current = setTimeout(() => {
         setState(prev => ({
           ...prev,

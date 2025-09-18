@@ -49,39 +49,76 @@ export function generateProblemFactory(settings: GeneratorSettings) {
   }
 
   function generateLawPairFive(op: Operation, max: number, min = 1): [number, number] {
-    // Пары для тренировки «через 5»: (1..4,1..4) или (5,1..4)
-    const pick = Math.random() < 0.5 ? 'pair14' : 'five_plus';
-    if (pick === 'pair14') {
-      const u1 = randomIntInclusive(4, 1);
-      const u2 = randomIntInclusive(4, 1);
-      let a = makeWithUnits(max, u1, min);
-      let b = makeWithUnits(max, u2, min);
-      if (op === '-') [a, b] = ensureNonNegativePair(a, b);
-      return [a, b];
+    // Пары для тренировки «через 5»
+    if (op === '+') {
+      // Сложение: (1..4,1..4) или (5,1..4)
+      const pick = Math.random() < 0.5 ? 'pair14' : 'five_plus';
+      if (pick === 'pair14') {
+        const u1 = randomIntInclusive(4, 1);
+        const u2 = randomIntInclusive(4, 1);
+        let a = makeWithUnits(max, u1, min);
+        let b = makeWithUnits(max, u2, min);
+        if (Math.random() < 0.5) [a, b] = [b, a];
+        return [a, b];
+      } else {
+        const u1 = 5;
+        const u2 = randomIntInclusive(4, 1);
+        let a = makeWithUnits(max, u1, min);
+        let b = makeWithUnits(max, u2, min);
+        if (Math.random() < 0.5) [a, b] = [b, a];
+        return [a, b];
+      }
     } else {
-      const u1 = 5;
-      const u2 = randomIntInclusive(4, 1);
-      let a = makeWithUnits(max, u1, min);
-      let b = makeWithUnits(max, u2, min);
-      if (Math.random() < 0.5) [a, b] = [b, a];
-      if (op === '-') [a, b] = ensureNonNegativePair(a, b);
+      // Вычитание: обеспечиваем заём через 5 — единицы уменьшаемого < единиц вычитаемого
+      const pick = Math.random() < 0.5 ? 'u_lt' : 'five_minus';
+      let uA = 0, uB = 0;
+      if (pick === 'u_lt') {
+        uA = randomIntInclusive(4, 0); // 0..4
+        uB = randomIntInclusive(4, Math.max(1, uA + 1)); // 1..4 и > uA
+      } else {
+        uA = 5;
+        uB = randomIntInclusive(4, 1); // 1..4
+      }
+      const maxTens = Math.floor((max - Math.max(uA, uB)) / 10);
+      let tB = randomIntInclusive(maxTens, 0);
+      let tA = randomIntInclusive(maxTens, tB); // tA >= tB, чтобы a >= b
+      let a = tA * 10 + uA;
+      let b = tB * 10 + uB;
+      if (a < b) a = (tB + 1) * 10 + uA; // страховка
+      a = Math.min(a, max);
+      b = Math.min(b, Math.min(a, max));
+      a = Math.max(a, min);
+      b = Math.max(b, min);
       return [a, b];
     }
   }
 
   function generateLawPairTen(op: Operation, max: number, min = 1): [number, number] {
-    // Пары-комплементы до 10: (1,9),(2,8),...,(5,5)
-    const u1 = randomIntInclusive(9, 1);
-    const u2 = (10 - (u1 % 10)) % 10 || 10; // 10 -> 10, но возьмём 0 как 10
-    const units2 = u2 === 10 ? 0 : u2; // комплемент единиц до 10
-    let a = makeWithUnits(max, u1 === 10 ? 0 : u1, min);
-    let b = makeWithUnits(max, units2, min);
-    if (op === '-') {
-      [a, b] = ensureNonNegativePair(a, b);
-    } else if (Math.random() < 0.5) {
-      [a, b] = [b, a];
+    // Пары-комплементы до 10
+    if (op === '+') {
+      const u1 = randomIntInclusive(9, 1);
+      const units2 = (10 - (u1 % 10)) % 10;
+      const u2 = units2 === 0 ? 0 : units2;
+      let a = makeWithUnits(max, u1 === 10 ? 0 : u1, min);
+      let b = makeWithUnits(max, u2, min);
+      if (Math.random() < 0.5) [a, b] = [b, a];
+      return [a, b];
+    } else {
+      // Для вычитания: обеспечиваем a_units < b_units
+      const uA = randomIntInclusive(8, 0); // 0..8
+      const uB = randomIntInclusive(9, uA + 1); // 1..9 и > uA
+      const maxTens = Math.floor((max - Math.max(uA, uB)) / 10);
+      let tB = randomIntInclusive(maxTens, 0);
+      let tA = randomIntInclusive(maxTens, tB); // tA >= tB
+      let a = tA * 10 + uA;
+      let b = tB * 10 + uB;
+      if (a < b) a = (tB + 1) * 10 + uA;
+      a = Math.min(a, max);
+      b = Math.min(b, Math.min(a, max));
+      a = Math.max(a, min);
+      b = Math.max(b, min);
+      return [a, b];
     }
-    return [a, b];
   }
 
   return function generate(): Problem {
