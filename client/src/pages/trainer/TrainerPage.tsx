@@ -72,6 +72,7 @@ interface TrainerState {
   currentStep: 'waiting' | 'prestart' | 'showing' | 'answering' | 'result' | 'result_pause';
   sequentialIndex?: number;
   answerTimeLeft?: number;
+  preStartTimeLeft?: number; // мс до начала показа
 }
 
 // Дополнительные типы настроек тренажёра
@@ -131,6 +132,7 @@ const TrainerPage: React.FC = () => {
     currentStep: 'waiting',
     sequentialIndex: 0,
     answerTimeLeft: 0,
+    preStartTimeLeft: 0,
   });
 
   // Проверка доступа при загрузке
@@ -257,8 +259,8 @@ const TrainerPage: React.FC = () => {
     
     const prePauseMs = ((currentSettings as any).preStartPause || 0) * 1000;
     if (prePauseMs > 0) {
-      // Экран ожидания (перед показом): отображаем таймер обратного отсчёта/прелоадер
-      setState(prev => ({ ...prev, currentStep: 'prestart', showProblem: false }));
+      // Экран ожидания (перед показом)
+      setState(prev => ({ ...prev, currentStep: 'prestart', showProblem: false, preStartTimeLeft: prePauseMs }));
       problemTimeoutRef.current = setTimeout(() => {
         setState(prev => ({
           ...prev,
@@ -267,6 +269,7 @@ const TrainerPage: React.FC = () => {
           problemStartTime: Date.now(),
           timeLeft: currentSettings.displaySpeed,
           sequentialIndex: 0,
+          preStartTimeLeft: 0,
         }));
       }, prePauseMs);
     } else {
@@ -1297,7 +1300,20 @@ const TrainerPage: React.FC = () => {
           
           {/* Контент тренировки */}
           <Paper sx={{ p: 4, minHeight: '400px' }}>
-            {state.currentStep === 'result' ? renderResults() : renderCurrentProblem()}
+            {state.currentStep === 'prestart' && (
+              <Box sx={{ textAlign: 'center', py: 6 }}>
+                <Typography variant="h4" sx={{ mb: 2 }}>
+                  Подготовьтесь…
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                  Показ начнётся через {(Math.ceil((state.preStartTimeLeft || 0)/1000))} c
+                </Typography>
+                <LinearProgress sx={{ maxWidth: 360, mx: 'auto' }} />
+              </Box>
+            )}
+            {state.currentStep !== 'prestart' && (
+              <>{state.currentStep === 'result' ? renderResults() : renderCurrentProblem()}</>
+            )}
           </Paper>
         </Box>
       )}
