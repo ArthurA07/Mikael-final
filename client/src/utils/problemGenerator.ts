@@ -34,32 +34,78 @@ export function generateProblemFactory(settings: GeneratorSettings) {
     ...settings,
   };
 
+  function makeWithUnits(max: number, units: number, min = 1): number {
+    // Подбираем число с заданной единичной цифрой, не превышая max
+    if (max < units) return Math.min(max, units);
+    const maxTens = Math.floor((max - units) / 10);
+    const tens = maxTens > 0 ? randomIntInclusive(maxTens, 0) : 0;
+    const candidate = tens * 10 + units;
+    return Math.max(min, candidate);
+  }
+
+  function ensureNonNegativePair(a: number, b: number): [number, number] {
+    if (a < b) return [b, a];
+    return [a, b];
+  }
+
+  function generateLawPairFive(op: Operation, max: number, min = 1): [number, number] {
+    // Пары для тренировки «через 5»: (1..4,1..4) или (5,1..4)
+    const pick = Math.random() < 0.5 ? 'pair14' : 'five_plus';
+    if (pick === 'pair14') {
+      const u1 = randomIntInclusive(4, 1);
+      const u2 = randomIntInclusive(4, 1);
+      let a = makeWithUnits(max, u1, min);
+      let b = makeWithUnits(max, u2, min);
+      if (op === '-') [a, b] = ensureNonNegativePair(a, b);
+      return [a, b];
+    } else {
+      const u1 = 5;
+      const u2 = randomIntInclusive(4, 1);
+      let a = makeWithUnits(max, u1, min);
+      let b = makeWithUnits(max, u2, min);
+      if (Math.random() < 0.5) [a, b] = [b, a];
+      if (op === '-') [a, b] = ensureNonNegativePair(a, b);
+      return [a, b];
+    }
+  }
+
+  function generateLawPairTen(op: Operation, max: number, min = 1): [number, number] {
+    // Пары-комплементы до 10: (1,9),(2,8),...,(5,5)
+    const u1 = randomIntInclusive(9, 1);
+    const u2 = (10 - (u1 % 10)) % 10 || 10; // 10 -> 10, но возьмём 0 как 10
+    const units2 = u2 === 10 ? 0 : u2; // комплемент единиц до 10
+    let a = makeWithUnits(max, u1 === 10 ? 0 : u1, min);
+    let b = makeWithUnits(max, units2, min);
+    if (op === '-') {
+      [a, b] = ensureNonNegativePair(a, b);
+    } else if (Math.random() < 0.5) {
+      [a, b] = [b, a];
+    }
+    return [a, b];
+  }
+
   return function generate(): Problem {
     const minValue = cfg.numberRangeMin ?? 1;
     const maxValue = cfg.numberRange;
 
     const numbers: number[] = [];
-    const useLaws = (cfg.lawsMode && cfg.lawsMode !== 'none') && (cfg.operations.includes('+') || cfg.operations.includes('-'));
+    const lawsOn = cfg.lawsMode && cfg.lawsMode !== 'none';
+    // Выбираем операцию; если законы активны — принудительно '+/-'
+    let operation: Operation = cfg.operations[Math.floor(Math.random() * cfg.operations.length)];
+    if (lawsOn && (operation === '*' || operation === '/')) {
+      operation = Math.random() < 0.5 ? '+' : '-';
+    }
 
-    if (useLaws && cfg.numbersCount >= 2 && maxValue <= 100) {
-      const baseMin = 1;
-      const baseMax = Math.min(9, maxValue);
-      const d1 = randomIntInclusive(baseMax, baseMin);
-      let d2 = randomIntInclusive(baseMax, baseMin);
-
-      if (cfg.lawsMode === 'five' || cfg.lawsMode === 'both') {
-        // Обеспечиваем, чтобы сумма последних цифр была кратна 5
-        let needed = (5 - (d1 % 10) + 10) % 10; // 0..9
-        if (needed === 0) needed = 5; // напр. 5+5
-        d2 = Math.min(Math.max(needed, baseMin), baseMax);
-      } else if (cfg.lawsMode === 'ten') {
-        // Обеспечиваем, чтобы сумма последних цифр была кратна 10
-        let needed = (10 - (d1 % 10) + 10) % 10; // 0..9
-        if (needed === 0) needed = 10;
-        d2 = Math.min(Math.max(needed, baseMin), baseMax);
-      }
-
-      numbers.push(d1, d2);
+    if (lawsOn && cfg.numbersCount >= 2 && maxValue >= 1) {
+      // Генерируем базовую пару под законы, остальные числа — случайные в диапазоне
+      const pair = (cfg.lawsMode === 'ten')
+        ? generateLawPairTen(operation, maxValue, minValue)
+        : (cfg.lawsMode === 'five')
+          ? generateLawPairFive(operation, maxValue, minValue)
+          : (Math.random() < 0.5
+              ? generateLawPairFive(operation, maxValue, minValue)
+              : generateLawPairTen(operation, maxValue, minValue));
+      numbers.push(pair[0], pair[1]);
       for (let i = 2; i < cfg.numbersCount; i++) {
         numbers.push(randomIntInclusive(maxValue, minValue));
       }
@@ -68,8 +114,6 @@ export function generateProblemFactory(settings: GeneratorSettings) {
         numbers.push(randomIntInclusive(maxValue, minValue));
       }
     }
-
-    const operation = cfg.operations[Math.floor(Math.random() * cfg.operations.length)];
 
     let correctAnswer: number;
     switch (operation) {

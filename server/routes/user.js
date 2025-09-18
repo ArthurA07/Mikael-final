@@ -90,10 +90,10 @@ router.put('/trainer-settings', [
     .withMessage('randomFont должен быть булевым значением')
   ,
   // Новые поля
-  body('multiplyDigits1').optional().isInt({ min: 1, max: 6 }),
-  body('multiplyDigits2').optional().isInt({ min: 1, max: 6 }),
-  body('divisionDividendDigits').optional().isInt({ min: 1, max: 9 }),
-  body('divisionDivisorDigits').optional().isInt({ min: 1, max: 6 }),
+  body('multiplyDigits1').optional({ nullable: true }).custom(v => v === null || (Number.isInteger(v) && v >= 1 && v <= 6)),
+  body('multiplyDigits2').optional({ nullable: true }).custom(v => v === null || (Number.isInteger(v) && v >= 1 && v <= 6)),
+  body('divisionDividendDigits').optional({ nullable: true }).custom(v => v === null || (Number.isInteger(v) && v >= 1 && v <= 9)),
+  body('divisionDivisorDigits').optional({ nullable: true }).custom(v => v === null || (Number.isInteger(v) && v >= 1 && v <= 6)),
   body('preStartPause').optional().isInt({ min: 0, max: 60 }),
   body('answerPause').optional().isInt({ min: 0, max: 120 }),
   body('resultPause').optional().isInt({ min: 0, max: 60 }),
@@ -114,13 +114,19 @@ router.put('/trainer-settings', [
     }
 
     const updates = {};
+    const unsets = {};
     Object.keys(req.body).forEach(key => {
-      updates[`trainerSettings.${key}`] = req.body[key];
+      const val = req.body[key];
+      if (val === null) {
+        unsets[`trainerSettings.${key}`] = "";
+      } else {
+        updates[`trainerSettings.${key}`] = val;
+      }
     });
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { $set: updates },
+      { ...(Object.keys(updates).length ? { $set: updates } : {}), ...(Object.keys(unsets).length ? { $unset: unsets } : {}) },
       { new: true, runValidators: true }
     );
 

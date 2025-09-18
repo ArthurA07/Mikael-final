@@ -801,7 +801,7 @@ const TrainerPage: React.FC = () => {
                 <FormLabel>Разрядность первого множителя</FormLabel>
                 <Select
                   value={(currentSettings as any).multiplyDigits1 ?? ''}
-                  onChange={(e) => handleSettingsChange({ multiplyDigits1: (e.target.value || undefined) as any })}
+                  onChange={(e) => handleSettingsChange({ multiplyDigits1: (e.target.value === '' ? null : Number(e.target.value)) as any })}
                   displayEmpty
                 >
                   <MenuItem value="">Авто</MenuItem>
@@ -812,7 +812,7 @@ const TrainerPage: React.FC = () => {
                 <FormLabel>Разрядность второго множителя</FormLabel>
                 <Select
                   value={(currentSettings as any).multiplyDigits2 ?? ''}
-                  onChange={(e) => handleSettingsChange({ multiplyDigits2: (e.target.value || undefined) as any })}
+                  onChange={(e) => handleSettingsChange({ multiplyDigits2: (e.target.value === '' ? null : Number(e.target.value)) as any })}
                   displayEmpty
                 >
                   <MenuItem value="">Авто</MenuItem>
@@ -825,7 +825,7 @@ const TrainerPage: React.FC = () => {
                 <FormLabel>Разрядность делимого</FormLabel>
                 <Select
                   value={(currentSettings as any).divisionDividendDigits ?? ''}
-                  onChange={(e) => handleSettingsChange({ divisionDividendDigits: (e.target.value || undefined) as any })}
+                  onChange={(e) => handleSettingsChange({ divisionDividendDigits: (e.target.value === '' ? null : Number(e.target.value)) as any })}
                   displayEmpty
                 >
                   <MenuItem value="">Авто</MenuItem>
@@ -836,7 +836,7 @@ const TrainerPage: React.FC = () => {
                 <FormLabel>Разрядность делителя</FormLabel>
                 <Select
                   value={(currentSettings as any).divisionDivisorDigits ?? ''}
-                  onChange={(e) => handleSettingsChange({ divisionDivisorDigits: (e.target.value || undefined) as any })}
+                  onChange={(e) => handleSettingsChange({ divisionDivisorDigits: (e.target.value === '' ? null : Number(e.target.value)) as any })}
                   displayEmpty
                 >
                   <MenuItem value="">Авто</MenuItem>
@@ -1029,21 +1029,28 @@ const TrainerPage: React.FC = () => {
           <Box>
             <FormLabel>Операции:</FormLabel>
             <Stack direction="row" spacing={1}>
-              {['+', '-', '*', '/'].map((op) => (
-                <Chip
-                  key={op}
-                  label={op}
-                  variant={currentSettings.operations.includes(op) ? 'filled' : 'outlined'}
-                  onClick={() => {
-                    const newOps = currentSettings.operations.includes(op)
-                      ? currentSettings.operations.filter((o: string) => o !== op)
-                      : [...currentSettings.operations, op];
-                    if (newOps.length > 0) {
-                      handleSettingsChange({ operations: newOps });
-                    }
-                  }}
-                />
-              ))}
+              {['+', '-', '*', '/'].map((op) => {
+                const lawsOn = (currentSettings as any).lawsMode && (currentSettings as any).lawsMode !== 'none';
+                const disabled = lawsOn && (op === '*' || op === '/');
+                return (
+                  <Chip
+                    key={op}
+                    label={op}
+                    color={disabled ? 'default' : undefined}
+                    variant={currentSettings.operations.includes(op) ? 'filled' : 'outlined'}
+                    onClick={() => {
+                      if (disabled) return; // блокируем выбор при включённых законах
+                      const newOps = currentSettings.operations.includes(op)
+                        ? currentSettings.operations.filter((o: string) => o !== op)
+                        : [...currentSettings.operations, op];
+                      if (newOps.length > 0) {
+                        handleSettingsChange({ operations: newOps });
+                      }
+                    }}
+                    sx={disabled ? { opacity: 0.5, pointerEvents: 'none' } : undefined}
+                  />
+                );
+              })}
             </Stack>
           </Box>
           
