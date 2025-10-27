@@ -47,6 +47,7 @@ interface Problem {
   userAnswer?: number;
   timeSpent?: number;
   isCorrect?: boolean;
+  ops?: ('+' | '-' | '*' | '/')[];
 }
 
 interface TrainingSession {
@@ -561,7 +562,9 @@ const TrainerPage: React.FC = () => {
                     return (
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
                         {idx === 0 ? null : (
-                          <Typography variant="h1" sx={{ fontSize: { xs: '3rem', md: '4rem' }, fontWeight: 'bold', color: theme.palette.primary.main, userSelect: 'none' }}>{operation}</Typography>
+                          <Typography variant="h1" sx={{ fontSize: { xs: '3rem', md: '4rem' }, fontWeight: 'bold', color: theme.palette.primary.main, userSelect: 'none' }}>
+                            {state.currentProblem?.ops && state.currentProblem.ops[idx-1] ? state.currentProblem.ops[idx-1] : operation}
+                          </Typography>
                         )}
                         <Box sx={{ flex: '0 1 280px', minWidth: '200px' }}>
                           <Typography variant="body1" sx={{ textAlign: 'center', mb: 1, fontWeight: 'bold' }}>Число {idx + 1}</Typography>
@@ -589,7 +592,7 @@ const TrainerPage: React.FC = () => {
                   </Box>
                 ))}
                 <Typography variant="body1" sx={{ mt: 3, textAlign: 'center', fontWeight: 'bold', color: theme.palette.primary.main }}>
-                  Операция: {operation}
+                  {state.currentProblem?.ops && state.currentProblem.ops.length > 0 ? 'Операции: + / -' : `Операция: ${operation}`}
                 </Typography>
               </Box>
             ) : (
@@ -599,7 +602,11 @@ const TrainerPage: React.FC = () => {
                   if (sequential) {
                     const idx = state.sequentialIndex || 0;
                     const num = numbers[idx];
-                    const text = idx === 0 ? String(num) : `${operation} ${num}`;
+                    const text = (() => {
+                      if (idx === 0) return String(num);
+                      const opFromSeq = state.currentProblem?.ops?.[idx - 1];
+                      return `${opFromSeq || operation} ${num}`;
+                    })();
                     return (
                       <Typography
                         key={idx}
@@ -628,7 +635,15 @@ const TrainerPage: React.FC = () => {
                         transform: `scale(${(currentSettings as any).fontScale || 1})`,
                       }}
                     >
-                      {numbers.join(` ${operation} `)}
+                      {(() => {
+                        const ops = state.currentProblem?.ops;
+                        if (ops && ops.length === numbers.length - 1) {
+                          let s = `${numbers[0]}`;
+                          for (let i = 1; i < numbers.length; i++) s += ` ${ops[i-1]} ${numbers[i]}`;
+                          return s;
+                        }
+                        return numbers.join(` ${operation} `);
+                      })()}
                     </Typography>
                   );
                 })()}

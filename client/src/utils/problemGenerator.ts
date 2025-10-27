@@ -18,8 +18,10 @@ export interface GeneratorSettings {
 
 export interface Problem {
   numbers: number[];
-  operation: Operation;
+  operation: Operation; // базовая операция для обратной совместимости/сервера
   correctAnswer: number;
+  // Необязательно: последовательность операций между числами (для смешанных + и -)
+  ops?: Operation[]; // длина = numbers.length - 1; используются только '+' | '-'
 }
 
 function randomIntInclusive(max: number, min = 1): number {
@@ -126,6 +128,7 @@ export function generateProblemFactory(settings: GeneratorSettings) {
     const maxValue = cfg.numberRange;
 
     const numbers: number[] = [];
+    let opsSequence: Operation[] | undefined;
     const lawsOn = cfg.lawsMode && cfg.lawsMode !== 'none';
     // Выбираем операцию; если законы активны — принудительно '+/-'
     let operation: Operation = cfg.operations[Math.floor(Math.random() * cfg.operations.length)];
@@ -196,18 +199,50 @@ export function generateProblemFactory(settings: GeneratorSettings) {
         }
       }
     } else {
-      for (let i = 0; i < cfg.numbersCount; i++) {
-        numbers.push(randomIntInclusive(maxValue, minValue));
+      // Обычный режим (без законов). Поддержим смешанные операции для суммы/разности.
+      const wantsMixedPlusMinus = cfg.numbersCount >= 3 && cfg.operations.includes('+') && cfg.operations.includes('-');
+      if (wantsMixedPlusMinus) {
+        // Генерируем как минимум один '+' и один '-'
+        opsSequence = Array.from({ length: cfg.numbersCount - 1 }, () => (Math.random() < 0.5 ? '+' : '-')) as Operation[];
+        // Гарантия наличия обоих знаков
+        if (!opsSequence.includes('+')) opsSequence[0] = '+';
+        if (!opsSequence.includes('-')) opsSequence[opsSequence.length - 1] = '-';
+        for (let i = 0; i < cfg.numbersCount; i++) {
+          numbers.push(randomIntInclusive(maxValue, minValue));
+        }
+      } else {
+        for (let i = 0; i < cfg.numbersCount; i++) {
+          numbers.push(randomIntInclusive(maxValue, minValue));
+        }
       }
     }
 
     let correctAnswer: number;
     switch (operation) {
       case '+':
-        correctAnswer = numbers.reduce((s, n) => s + n, 0);
+        if (opsSequence && opsSequence.length === numbers.length - 1) {
+          // Смешанная последовательность плюс/минус, базовая операция оставляем '+'
+          let acc = numbers[0];
+          for (let i = 1; i < numbers.length; i++) {
+            const op = opsSequence[i - 1];
+            acc = op === '+' ? acc + numbers[i] : acc - numbers[i];
+          }
+          correctAnswer = acc;
+        } else {
+          correctAnswer = numbers.reduce((s, n) => s + n, 0);
+        }
         break;
       case '-':
-        correctAnswer = numbers.reduce((d, n, idx) => (idx === 0 ? n : d - n));
+        if (opsSequence && opsSequence.length === numbers.length - 1) {
+          let acc = numbers[0];
+          for (let i = 1; i < numbers.length; i++) {
+            const op = opsSequence[i - 1];
+            acc = op === '+' ? acc + numbers[i] : acc - numbers[i];
+          }
+          correctAnswer = acc;
+        } else {
+          correctAnswer = numbers.reduce((d, n, idx) => (idx === 0 ? n : d - n));
+        }
         break;
       case '*':
         if (cfg.multiplyDigits1 || cfg.multiplyDigits2) {
@@ -263,6 +298,11 @@ export function generateProblemFactory(settings: GeneratorSettings) {
         }
       default:
         correctAnswer = numbers.reduce((s, n) => s + n, 0);
+    }
+
+    // Если создали смешанную последовательность, всегда проставляем operation как '+' (UI/сервер совместим)
+    if (opsSequence && opsSequence.length === numbers.length - 1) {
+      return { numbers, operation: '+', correctAnswer, ops: opsSequence.map(op => (op === '+' || op === '-' ? op : '+')) };
     }
 
     return { numbers, operation, correctAnswer };
