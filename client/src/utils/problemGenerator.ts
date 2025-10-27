@@ -47,6 +47,10 @@ export function generateProblemFactory(settings: GeneratorSettings) {
     return Math.max(min, candidate);
   }
 
+  function numDigits(n: number): number {
+    return Math.max(1, Math.floor(Math.log10(Math.max(1, n))) + 1);
+  }
+
   function ensureNonNegativePair(a: number, b: number): [number, number] {
     if (a < b) return [b, a];
     return [a, b];
@@ -371,68 +375,82 @@ export function generateProblemFactory(settings: GeneratorSettings) {
         correctAnswer = numbers.reduce((p, n) => p * n, 1);
         break;
       case '/':
-        // Унифицированная генерация деления (2 или 3 числа) с ограничением делимого ≤ 6 цифр
+        // Генерация деления (2 или 3 числа) через выбор делимого с требуемой разрядностью,
+        // затем разложение на целочисленные делители и частное.
         {
           const MAX_DIVIDEND = 999999;
           const countDivs = Math.min(effectiveNumbersCount, 3) - 1; // 1 или 2 делителя
 
-          // Границы делимого
+          // 1) Выбираем делимое в допустимых границах и с нужной разрядностью (если задана)
           let minDividend = 1;
           let maxDividend = Math.min(MAX_DIVIDEND, cfg.numberRange);
           if (cfg.divisionDividendDigits) {
             minDividend = Math.pow(10, cfg.divisionDividendDigits - 1);
             maxDividend = Math.min(maxDividend, Math.pow(10, cfg.divisionDividendDigits) - 1);
           }
-          if (minDividend > maxDividend) minDividend = Math.max(1, Math.min(minDividend, MAX_DIVIDEND));
-
-          // Выбираем желаемое частное (стараемся не 1)
-          const qUpperPref = Math.max(2, Math.min(20, Math.floor(maxDividend / 10)));
-          let q = qUpperPref >= 2 ? randomIntInclusive(qUpperPref, 2) : 1;
-
-          // Подбираем делители так, чтобы произведение не превышало maxDividend / q
-          const divisors: number[] = [];
-          let product = 1;
-          const productMax = Math.max(1, Math.floor(maxDividend / Math.max(1, q)));
-          for (let i = 0; i < countDivs; i++) {
-            const useDigits = i === 0 ? cfg.divisionDivisorDigits : (cfg.divisionSecondDivisorDigits || cfg.divisionDivisorDigits);
-            const digitsUpper = useDigits ? (Math.pow(10, useDigits) - 1) : Infinity;
-            const digitsLower = useDigits ? Math.pow(10, useDigits - 1) : 1;
-            let upper = Math.min(productMax / product | 0, cfg.numberRange, 999); // держим делители умеренными
-            upper = Math.min(upper, digitsUpper);
-            let lower = Math.max(1, Math.min(digitsLower, upper));
-            if (upper < 1 || lower > upper) {
-              divisors.push(1);
-              continue;
-            }
-            const d = Math.max(1, randomIntInclusive(upper, lower));
-            divisors.push(d);
-            product *= d;
+          if (minDividend > maxDividend) {
+            minDividend = Math.min(minDividend, MAX_DIVIDEND);
+            maxDividend = minDividend;
+          }
+          let dividend: number;
+          if (!cfg.divisionDividendDigits) {
+            // Добавляем рандомизацию по количеству цифр, чтобы не всегда были 6-значные числа
+            const minD = numDigits(minDividend);
+            const maxD = Math.min(6, numDigits(maxDividend));
+            const d = randomIntInclusive(maxD, minD);
+            const low = Math.max(minDividend, Math.pow(10, d - 1));
+            const high = Math.min(maxDividend, Math.pow(10, d) - 1);
+            dividend = low <= high ? randomIntInclusive(high, low) : randomIntInclusive(maxDividend, minDividend);
+          } else {
+            dividend = randomIntInclusive(maxDividend, minDividend);
           }
 
-          // Уточняем q так, чтобы dividend влезал в границы
-          let minQ = Math.max(1, Math.ceil(minDividend / product));
-          let maxQ = Math.max(1, Math.floor(maxDividend / product));
-          if (maxQ < 1) {
-            // продукт слишком большой — уменьшим последний делитель
-            if (divisors.length > 0) {
-              const lastIdx = divisors.length - 1;
-              const reduceTo = Math.max(1, Math.floor((maxDividend / Math.max(1, Math.ceil(minDividend / Math.max(1, q)))) / (product / divisors[lastIdx])));
-              if (reduceTo < divisors[lastIdx]) {
-                product = (product / divisors[lastIdx]) * reduceTo;
-                divisors[lastIdx] = reduceTo;
-                minQ = Math.max(1, Math.ceil(minDividend / product));
-                maxQ = Math.max(1, Math.floor(maxDividend / product));
+          // Вспомогательные функции
+          const inDigits = (n: number, d?: number) => d ? (n >= Math.pow(10, d - 1) && n <= Math.pow(10, d) - 1) : true;
+          const withinRange = (n: number) => n >= 1 && n <= Math.max(1, cfg.numberRange);
+          const factors = (n: number): number[] => {
+            const res: number[] = [];
+            const limit = Math.floor(Math.sqrt(n));
+            for (let i = 1; i <= limit; i++) {
+              if (n % i === 0) {
+                res.push(i);
+                const j = Math.floor(n / i);
+                if (j !== i) res.push(j);
               }
             }
+            return res.sort((a,b) => a-b);
+          };
+
+          if (countDivs <= 0) {
+            // 2) Случай одного делителя
+            const qCandidates = factors(dividend).filter(x => x >= 2); // стараемся q>=2
+            const q = qCandidates.length ? qCandidates[Math.floor(Math.random() * qCandidates.length)] : 1;
+            const divisor = Math.floor(dividend / q);
+            return { numbers: [dividend, divisor], operation: '/', correctAnswer: q };
           }
 
-          if (minQ > maxQ) { minQ = 1; maxQ = 1; }
-          // Пытаемся выбрать q ≥ 2, если это допустимо
-          const pickMin = Math.min(Math.max(2, minQ), maxQ);
-          q = pickMin <= maxQ ? randomIntInclusive(maxQ, pickMin) : maxQ; // если нельзя ≥2, берём допустимый
-
-          const dividend = product * q;
-          return { numbers: [dividend, ...divisors], operation: '/', correctAnswer: q };
+          // 3) Случай двух делителей: dividend = d1 * d2 * q
+          // Выбираем q как нетривиальный делитель, затем раскладываем P = dividend / q на пару (d1,d2)
+          const qAll = factors(dividend).filter(x => x >= 2);
+          const q = qAll.length ? qAll[Math.floor(Math.random() * qAll.length)] : 1;
+          const P = Math.floor(dividend / q);
+          const pFactors = factors(P);
+          // Генерируем пары (a,b) такие, что a*b=P, и соблюдаем разрядности/диапазон
+          const pairs: Array<[number, number]> = [];
+          for (const a of pFactors) {
+            const b = Math.floor(P / a);
+            if (a*b !== P) continue;
+            if (!withinRange(a) || !withinRange(b)) continue;
+            if (!inDigits(a, cfg.divisionDivisorDigits)) continue;
+            if (!inDigits(b, cfg.divisionSecondDivisorDigits || cfg.divisionDivisorDigits)) continue;
+            pairs.push([a, b]);
+          }
+          if (pairs.length) {
+            const [d1, d2] = pairs[Math.floor(Math.random() * pairs.length)];
+            return { numbers: [dividend, d1, d2], operation: '/', correctAnswer: q };
+          }
+          // если подходящих пар нет — деградируем до одного делителя
+          return { numbers: [dividend, P], operation: '/', correctAnswer: q };
         }
       default:
         correctAnswer = numbers.reduce((s, n) => s + n, 0);
