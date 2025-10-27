@@ -97,8 +97,10 @@ const DEFAULT_SETTINGS = {
   // Разрядности (опционально)
   multiplyDigits1: undefined as number | undefined,
   multiplyDigits2: undefined as number | undefined,
+  multiplyDigits3: undefined as number | undefined,
   divisionDividendDigits: undefined as number | undefined,
   divisionDivisorDigits: undefined as number | undefined,
+  divisionSecondDivisorDigits: undefined as number | undefined,
   // Паузы (секунды)
   preStartPause: 0,
   answerPause: 0,
@@ -203,10 +205,12 @@ const TrainerPage: React.FC = () => {
       numberRangeMin: currentSettings.numberRangeMin ?? 1,
       operations: currentSettings.operations as ('+' | '-' | '*' | '/')[],
       lawsMode: currentSettings.lawsMode as LawsMode,
-      multiplyDigits1: currentSettings.multiplyDigits1 as any,
-      multiplyDigits2: currentSettings.multiplyDigits2 as any,
+        multiplyDigits1: currentSettings.multiplyDigits1 as any,
+        multiplyDigits2: currentSettings.multiplyDigits2 as any,
+        multiplyDigits3: currentSettings.multiplyDigits3 as any,
       divisionDividendDigits: currentSettings.divisionDividendDigits as any,
-      divisionDivisorDigits: currentSettings.divisionDivisorDigits as any,
+        divisionDivisorDigits: currentSettings.divisionDivisorDigits as any,
+        divisionSecondDivisorDigits: currentSettings.divisionSecondDivisorDigits as any,
     });
     return factory();
   }, [currentSettings.numbersCount, currentSettings.numberRange, currentSettings.numberRangeMin, currentSettings.operations, currentSettings.lawsMode]);
@@ -849,6 +853,17 @@ const TrainerPage: React.FC = () => {
                   {[1,2,3].map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
                 </Select>
               </FormControl>
+              <FormControl fullWidth>
+                <FormLabel>Разрядность третьего множителя</FormLabel>
+                <Select
+                  value={(currentSettings as any).multiplyDigits3 ?? ''}
+                  onChange={(e) => handleSettingsChange({ multiplyDigits3: (e.target.value === '' ? null : Number(e.target.value)) as any })}
+                  displayEmpty
+                >
+                  <MenuItem value="">Авто</MenuItem>
+                  {[1,2,3].map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                </Select>
+              </FormControl>
             </Stack>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
               <FormControl fullWidth>
@@ -867,6 +882,17 @@ const TrainerPage: React.FC = () => {
                 <Select
                   value={(currentSettings as any).divisionDivisorDigits ?? ''}
                   onChange={(e) => handleSettingsChange({ divisionDivisorDigits: (e.target.value === '' ? null : Number(e.target.value)) as any })}
+                  displayEmpty
+                >
+                  <MenuItem value="">Авто</MenuItem>
+                  {[1,2,3,4].map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <FormLabel>Разрядность второго делителя</FormLabel>
+                <Select
+                  value={(currentSettings as any).divisionSecondDivisorDigits ?? ''}
+                  onChange={(e) => handleSettingsChange({ divisionSecondDivisorDigits: (e.target.value === '' ? null : Number(e.target.value)) as any })}
                   displayEmpty
                 >
                   <MenuItem value="">Авто</MenuItem>
@@ -916,7 +942,7 @@ const TrainerPage: React.FC = () => {
               onChange={(_, value) => setLocalOnly({ numbersCount: value as number })}
               onChangeCommitted={(_, value) => handleSettingsChange({ numbersCount: value as number })}
               min={2}
-              max={15}
+              max={currentSettings.operations.some(op => op === '*' || op === '/') ? 3 : 15}
               step={1}
               marks={Array.from({ length: 14 }, (_, i) => {
                 const v = i + 2; // 2..15

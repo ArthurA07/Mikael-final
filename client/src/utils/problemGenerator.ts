@@ -12,8 +12,10 @@ export interface GeneratorSettings {
   // Разрядности для умножения/деления (количество цифр)
   multiplyDigits1?: number;
   multiplyDigits2?: number;
+  multiplyDigits3?: number;
   divisionDividendDigits?: number;
   divisionDivisorDigits?: number;
+  divisionSecondDivisorDigits?: number;
 }
 
 export interface Problem {
@@ -136,8 +138,11 @@ export function generateProblemFactory(settings: GeneratorSettings) {
       operation = Math.random() < 0.5 ? '+' : '-';
     }
 
-    if (lawsOn && cfg.numbersCount >= 2 && maxValue >= 1) {
-      const wantsMixedPlusMinus = cfg.numbersCount >= 3 && cfg.operations.includes('+') && cfg.operations.includes('-');
+    const hasMulOrDiv = cfg.operations.includes('*') || cfg.operations.includes('/');
+    const effectiveNumbersCount = hasMulOrDiv ? Math.min(cfg.numbersCount, 3) : cfg.numbersCount;
+
+    if (lawsOn && effectiveNumbersCount >= 2 && maxValue >= 1) {
+      const wantsMixedPlusMinus = effectiveNumbersCount >= 3 && cfg.operations.includes('+') && cfg.operations.includes('-');
       const pickLaw = (): 'five' | 'ten' => (cfg.lawsMode === 'both') ? (Math.random() < 0.5 ? 'five' : 'ten') : (cfg.lawsMode as 'five' | 'ten');
 
       if (wantsMixedPlusMinus) {
@@ -146,7 +151,7 @@ export function generateProblemFactory(settings: GeneratorSettings) {
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
           numbers.length = 0;
           // последовательность знаков
-          opsSequence = Array.from({ length: cfg.numbersCount - 1 }, () => (Math.random() < 0.5 ? '+' : '-')) as Operation[];
+          opsSequence = Array.from({ length: effectiveNumbersCount - 1 }, () => (Math.random() < 0.5 ? '+' : '-')) as Operation[];
           if (!opsSequence.includes('+')) opsSequence[0] = '+';
           if (!opsSequence.includes('-')) opsSequence[opsSequence.length - 1] = '-';
           // стартовая пара
@@ -283,7 +288,7 @@ export function generateProblemFactory(settings: GeneratorSettings) {
           if (!opsSequence.includes('+')) opsSequence[0] = '+';
           if (!opsSequence.includes('-')) opsSequence[opsSequence.length - 1] = '-';
           numbers.length = 0;
-          for (let i = 0; i < cfg.numbersCount; i++) numbers.push(randomIntInclusive(maxValue, minValue));
+          for (let i = 0; i < effectiveNumbersCount; i++) numbers.push(randomIntInclusive(maxValue, minValue));
           // Проверяем неотрицательный итог
           let acc = numbers[0];
           for (let i = 1; i < numbers.length; i++) acc = (opsSequence[i-1] === '+') ? acc + numbers[i] : acc - numbers[i];
@@ -295,12 +300,12 @@ export function generateProblemFactory(settings: GeneratorSettings) {
         }
       } else {
         // Если выбрана только операция '-' и чисел >= 2 — гарантируем неотрицательный результат
-        if (cfg.operations.length === 1 && cfg.operations[0] === '-' && cfg.numbersCount >= 2) {
+        if (cfg.operations.length === 1 && cfg.operations[0] === '-' && effectiveNumbersCount >= 2) {
           const firstMin = Math.max(minValue, (cfg.numbersCount - 1) * minValue);
           const a0 = randomIntInclusive(maxValue, Math.min(firstMin, maxValue));
           numbers.push(a0);
           let remainder = a0;
-          for (let i = 1; i < cfg.numbersCount; i++) {
+          for (let i = 1; i < effectiveNumbersCount; i++) {
             const remaining = cfg.numbersCount - i;
             const minNeededForRest = (remaining - 1) * minValue;
             const maxForThis = Math.max(minValue, Math.min(maxValue, remainder - minNeededForRest));
@@ -309,7 +314,7 @@ export function generateProblemFactory(settings: GeneratorSettings) {
             remainder -= pick;
           }
         } else {
-          for (let i = 0; i < cfg.numbersCount; i++) {
+          for (let i = 0; i < effectiveNumbersCount; i++) {
             numbers.push(randomIntInclusive(maxValue, minValue));
           }
         }
@@ -344,20 +349,35 @@ export function generateProblemFactory(settings: GeneratorSettings) {
         }
         break;
       case '*':
-        if (cfg.multiplyDigits1 || cfg.multiplyDigits2) {
-          const d1 = cfg.multiplyDigits1 ? randomIntInclusive(Math.pow(10, cfg.multiplyDigits1) - 1, Math.pow(10, cfg.multiplyDigits1 - 1)) : randomIntInclusive(maxValue, minValue);
-          const d2 = cfg.multiplyDigits2 ? randomIntInclusive(Math.pow(10, cfg.multiplyDigits2) - 1, Math.pow(10, cfg.multiplyDigits2 - 1)) : randomIntInclusive(maxValue, minValue);
-          numbers.splice(0, numbers.length, d1, d2);
+        if (hasMulOrDiv) {
+          // Ограничиваем количество множителей до 3 и уважаем разрядности
+          const count = Math.min(effectiveNumbersCount, 3);
+          const picks: number[] = [];
+          const digitsForIndex = (idx: number | undefined) => {
+            if (idx === 0 && cfg.multiplyDigits1) return cfg.multiplyDigits1;
+            if (idx === 1 && cfg.multiplyDigits2) return cfg.multiplyDigits2;
+            if (idx === 2 && cfg.multiplyDigits3) return cfg.multiplyDigits3;
+            return undefined;
+          };
+          for (let i = 0; i < count; i++) {
+            const d = digitsForIndex(i);
+            const val = d
+              ? randomIntInclusive(Math.pow(10, d) - 1, Math.pow(10, d - 1))
+              : randomIntInclusive(maxValue, minValue);
+            picks.push(Math.max(1, val));
+          }
+          numbers.splice(0, numbers.length, ...picks);
         }
         correctAnswer = numbers.reduce((p, n) => p * n, 1);
         break;
       case '/':
-        // Обеспечиваем целочисленный ответ. Поддержка цепочки из numbersCount делений.
-        if ((cfg.numbersCount || 2) > 2) {
+        // Обеспечиваем целочисленный ответ. Поддержка цепочки из 2 делений (3 числа максимум).
+        if ((effectiveNumbersCount || 2) > 2) {
           const divisors: number[] = [];
-          for (let i = 0; i < (cfg.numbersCount - 1); i++) {
-            const d = cfg.divisionDivisorDigits
-              ? randomIntInclusive(Math.pow(10, cfg.divisionDivisorDigits) - 1, Math.pow(10, cfg.divisionDivisorDigits - 1))
+          for (let i = 0; i < (Math.min(effectiveNumbersCount, 3) - 1); i++) {
+            const useDigits = i === 0 ? cfg.divisionDivisorDigits : (cfg.divisionSecondDivisorDigits || cfg.divisionDivisorDigits);
+            const d = useDigits
+              ? randomIntInclusive(Math.pow(10, useDigits) - 1, Math.pow(10, useDigits - 1))
               : randomIntInclusive(Math.min(cfg.numberRange, 100), 1);
             divisors.push(Math.max(1, d));
           }
