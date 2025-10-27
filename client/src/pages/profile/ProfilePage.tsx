@@ -8,6 +8,7 @@ const ProfilePage: React.FC = () => {
   const { user, updateUser } = useAuth();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +61,7 @@ const ProfilePage: React.FC = () => {
     if (user) {
       setName(user.name || '');
       setPhone(user.phone || '');
+      setEmail(user.email || '');
       // аватар теперь статичный для всех
     }
   }, [user]);
@@ -121,6 +123,12 @@ const ProfilePage: React.FC = () => {
             <Stack direction="row" spacing={2} alignItems="center">
               <Avatar src={DEFAULT_AVATAR} sx={{ width: 64, height: 64 }} />
             </Stack>
+          {/* Email (только для чтения) */}
+          <TextField 
+            label="Email" 
+            value={email}
+            InputProps={{ readOnly: true }}
+          />
             <TextField 
               label="Имя" 
               value={name} 

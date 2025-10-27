@@ -407,11 +407,16 @@ const InteractiveAbacus: React.FC = () => {
   }, []);
 
   // Обновление отображаемого значения при изменении абакуса
+  // В игровом режиме поле «Число» должно оставаться пустым до нажатия «Проверить»
   useEffect(() => {
     const value = calculateValue(state.columns);
     setInputValue(value.toString());
-    setDraftValue(value.toString());
-  }, [state.columns, calculateValue]);
+    if (!state.gameMode) {
+      setDraftValue(value.toString());
+    } else {
+      setDraftValue('');
+    }
+  }, [state.columns, state.gameMode, calculateValue]);
 
   // Установка числа на абакусе с анимацией
   const setAbacusValue = useCallback((value: number, animate: boolean = false) => {
@@ -529,6 +534,8 @@ const InteractiveAbacus: React.FC = () => {
       targetNumber,
       gameResult: 'none',
     }));
+    // Скрываем текущее значение из поля до проверки
+    setDraftValue('');
   }, [state.gameRange, state.columns.length]);
 
   const checkAnswer = useCallback(async () => {
@@ -831,7 +838,7 @@ const InteractiveAbacus: React.FC = () => {
             </Typography>
             <TextField
               type="text"
-              value={draftValue}
+              value={state.gameMode ? '' : draftValue}
               onChange={handleDraftChange}
               onBlur={commitDraftValue}
               onKeyDown={(e) => { if (e.key === 'Enter') commitDraftValue(); }}
@@ -846,7 +853,11 @@ const InteractiveAbacus: React.FC = () => {
                 },
                 "& input[type=number]": { MozAppearance: 'textfield' },
               }}
-              InputProps={{ style: { fontSize: "1rem", fontWeight: 600, color: "#2c3e50" } }}
+              placeholder={state.gameMode ? ' ' : undefined}
+              InputProps={{ 
+                readOnly: state.gameMode,
+                style: { fontSize: "1rem", fontWeight: 600, color: "#2c3e50" }
+              }}
             />
           </Box>
 

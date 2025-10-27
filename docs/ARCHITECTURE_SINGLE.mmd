@@ -1,0 +1,86 @@
+flowchart TB
+  %% ЕДИНЫЙ ГРАФ: Клиент ⇄ Сервер ⇄ БД + ключевые потоки
+
+  subgraph Infra[Деплой]
+    FE[Render: Static Site (client/build)]
+    BE[Render: Web Service (Node/Express)]
+  end
+
+  subgraph Client[Frontend React (client)]
+    R[React App]
+    Router[React Router]
+    AuthCtx[AuthContext]
+    UserCtx[UserContext]
+    subgraph Pages[Страницы]
+      Login[LoginPage]
+      Trainer[TrainerPage + InteractiveAbacus]
+      Stats[StatsPage]
+      History[HistoryPage]
+      Profile[ProfilePage]
+      Abacus[AbacusPage]
+    end
+  end
+
+  subgraph Server[Backend Express (server)]
+    MW[Middleware: cors/json/auth]
+    Auth[/auth/*]
+    User[/user/*]
+    Training[/training/*]
+    Public[/public/*]
+  end
+
+  subgraph DB[(MongoDB Atlas)]
+    ColUser[(User)]
+    ColTraining[(Training)]
+    ColFree[(FreeAccess)]
+  end
+
+  %% Транспорт и соединения
+  U[Пользователь/Браузер] -->|HTTPS| FE
+  FE --> R
+  R -. axios HTTPS /api .-> BE
+  BE -->|TLS| DB
+
+  %% Внутри клиента
+  R --> Router
+  R --> AuthCtx
+  R --> UserCtx
+  Router --> Pages
+  AuthCtx --> Pages
+  UserCtx --> Pages
+
+  %% AUTH FLOW
+  Login -. POST /auth/login .-> Auth
+  Auth --> ColUser
+  Auth -. JWT+user .-> Login
+  Login -. GET /auth/me .-> Auth
+  Auth -. user .-> AuthCtx
+
+  %% TRAINING FLOW
+  Trainer -. POST /training/complete {problems,settings,metrics} .-> Training
+  Training -->|save (pre-save calc)| ColTraining
+  Trainer -. PUT /user/stats {inc*, accuracy, xp} .-> User
+  User -->|$inc/$set| ColUser
+
+  %% STATS FLOW
+  Stats -. GET /user/stats?period=all .-> User
+  User -->|aggregate getUserStats| ColTraining
+  User -. {profile,training,lastSession} .-> Stats
+
+  %% HISTORY & EXPORT
+  History -. GET /user/training-history .-> User
+  User -->|find(filter, opts)| ColTraining
+  History -. GET /user/export/my-history .-> User
+  User -->|find().sort(createdAt)| ColTraining
+
+  %% PUBLIC FREE ACCESS (абакус для гостей)
+  Abacus -. POST /public/free-access .-> Public
+  Public -->|find/create| ColFree
+
+  %% ПРОФИЛЬ
+  Profile -. PUT /auth/profile .-> Auth
+  Auth --> ColUser
+
+  %% СВЯЗИ ИНФРА
+  FE -. /api proxy .-> BE
+

@@ -154,10 +154,7 @@ const HistoryPage: React.FC = () => {
               </Stack>
             </Paper>
           ))}
-          <Stack direction="row" spacing={2} sx={{ pt: 1 }}>
-            <Button variant="outlined" disabled={!hasPrev} onClick={() => load(page - 1)}>Назад</Button>
-            <Button variant="outlined" disabled={!hasNext} onClick={() => load(page + 1)}>Вперёд</Button>
-          </Stack>
+          {/* Кнопки пагинации убраны по UX — список всегда первой страницы фильтра */}
         </Stack>
       )}
     </Box>

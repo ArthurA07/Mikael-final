@@ -164,6 +164,9 @@ const TrainerPage: React.FC = () => {
   const [showHelp, setShowHelp] = useState(false);
 
   const problemTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Флаги для защиты от двойной отправки/сохранения
+  const submittingAnswerRef = useRef(false);
+  const sessionSavedRef = useRef(false);
   
   // Стабильная ссылка на текущие настройки
   const currentSettings = useMemo(() => localSettings, [localSettings]);
@@ -256,6 +259,9 @@ const TrainerPage: React.FC = () => {
       sequentialIndex: 0,
       userAnswer: '',
     }));
+    // Сбрасываем защитные флаги для новой сессии
+    submittingAnswerRef.current = false;
+    sessionSavedRef.current = false;
     
     const prePauseMs = ((currentSettings as any).preStartPause || 0) * 1000;
     if (prePauseMs > 0) {
@@ -296,6 +302,8 @@ const TrainerPage: React.FC = () => {
   // Отправка ответа
   const submitAnswer = useCallback(async () => {
     if (!state.currentSession || !state.currentProblem) return;
+    if (submittingAnswerRef.current) return; // антидребезг на быстрые клики/таймер
+    submittingAnswerRef.current = true;
     
     clearCurrentTimeout();
     
@@ -339,29 +347,29 @@ const TrainerPage: React.FC = () => {
           // Логика начисления опыта: опыт за сессию равен её «Счёту»
           const sessionXp = Math.round(score);
           await updateUserStats({
-            // Увеличиваем количество решённых примеров, а не сессий
+            // Используем только инкременты, чтобы не удваивать агрегаты
             incTotalExercises: updatedProblems.length,
             incCorrectAnswers: correctAnswers,
             incTotalTime: totalTime,
-            bestAccuracy: Math.max(user.stats?.bestAccuracy || 0, accuracy),
-            // Для обратной совместимости оставим абсолютные поля, если сервер их примет
-            totalExercises: (user.stats?.totalExercises || 0) + updatedProblems.length,
-            correctAnswers: (user.stats?.correctAnswers || 0) + correctAnswers,
-            totalTime: (user.stats?.totalTime || 0) + totalTime,
-            experiencePoints: (user.stats?.experiencePoints || 0) + sessionXp,
+            // Передаём accuracy — сервер обновит bestAccuracy при необходимости
             accuracy,
+            // Опыт — абсолютным значением (текущее + начисленное)
+            experiencePoints: (user.stats?.experiencePoints || 0) + sessionXp,
           });
           // Обновляем агрегаты в контексте, чтобы виджет и /stats сразу увидели изменения
           try { await refreshUserStats(); } catch {}
 
           // Сохраняем детальную историю в Training (бэкенд)
           try {
-            await axios.post('/training/complete', {
+            if (!sessionSavedRef.current) {
+              sessionSavedRef.current = true; // ставим флаг до запроса, чтобы отсеять дубликаты
+              await axios.post('/training/complete', {
               problems: updatedProblems,
               settings: currentSettings,
               metrics: { totalTime },
               sessionType: 'practice',
-            });
+              });
+            }
             // Автовыдача простых достижений
             try {
               const totalAll = (user.stats?.totalExercises || 0) + updatedProblems.length;
@@ -394,6 +402,7 @@ const TrainerPage: React.FC = () => {
         currentSession: completedSession,
         currentStep: 'result',
       }));
+      submittingAnswerRef.current = false;
     } else {
       const nextProblem = updatedProblems[nextIndex];
       
@@ -414,6 +423,7 @@ const TrainerPage: React.FC = () => {
         sequentialIndex: 0,
       }));
       // Не используем внешний таймер перехода: показом и переходом управляет эффект показа
+      submittingAnswerRef.current = false;
     }
   }, [state, currentSettings.displaySpeed, user, updateUserStats, addAchievement, isAuthenticated, clearCurrentTimeout]);
 
