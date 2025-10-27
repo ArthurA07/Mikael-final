@@ -199,20 +199,45 @@ export function generateProblemFactory(settings: GeneratorSettings) {
         }
       }
     } else {
-      // Обычный режим (без законов). Поддержим смешанные операции для суммы/разности.
+      // Обычный режим (без законов). Поддержим смешанные операции для суммы/разности
       const wantsMixedPlusMinus = cfg.numbersCount >= 3 && cfg.operations.includes('+') && cfg.operations.includes('-');
       if (wantsMixedPlusMinus) {
         // Генерируем как минимум один '+' и один '-'
-        opsSequence = Array.from({ length: cfg.numbersCount - 1 }, () => (Math.random() < 0.5 ? '+' : '-')) as Operation[];
-        // Гарантия наличия обоих знаков
-        if (!opsSequence.includes('+')) opsSequence[0] = '+';
-        if (!opsSequence.includes('-')) opsSequence[opsSequence.length - 1] = '-';
-        for (let i = 0; i < cfg.numbersCount; i++) {
-          numbers.push(randomIntInclusive(maxValue, minValue));
+        const maxAttempts = 25;
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          opsSequence = Array.from({ length: cfg.numbersCount - 1 }, () => (Math.random() < 0.5 ? '+' : '-')) as Operation[];
+          if (!opsSequence.includes('+')) opsSequence[0] = '+';
+          if (!opsSequence.includes('-')) opsSequence[opsSequence.length - 1] = '-';
+          numbers.length = 0;
+          for (let i = 0; i < cfg.numbersCount; i++) numbers.push(randomIntInclusive(maxValue, minValue));
+          // Проверяем неотрицательный итог
+          let acc = numbers[0];
+          for (let i = 1; i < numbers.length; i++) acc = (opsSequence[i-1] === '+') ? acc + numbers[i] : acc - numbers[i];
+          if (acc >= 0) break; else if (attempt === maxAttempts - 1) {
+            // в крайнем случае поднимем первый элемент
+            const deficit = Math.abs(acc);
+            numbers[0] = Math.min(maxValue, numbers[0] + deficit);
+          }
         }
       } else {
-        for (let i = 0; i < cfg.numbersCount; i++) {
-          numbers.push(randomIntInclusive(maxValue, minValue));
+        // Если выбрана только операция '-' и чисел >= 2 — гарантируем неотрицательный результат
+        if (cfg.operations.length === 1 && cfg.operations[0] === '-' && cfg.numbersCount >= 2) {
+          const firstMin = Math.max(minValue, (cfg.numbersCount - 1) * minValue);
+          const a0 = randomIntInclusive(maxValue, Math.min(firstMin, maxValue));
+          numbers.push(a0);
+          let remainder = a0;
+          for (let i = 1; i < cfg.numbersCount; i++) {
+            const remaining = cfg.numbersCount - i;
+            const minNeededForRest = (remaining - 1) * minValue;
+            const maxForThis = Math.max(minValue, Math.min(maxValue, remainder - minNeededForRest));
+            const pick = randomIntInclusive(maxForThis, minValue);
+            numbers.push(pick);
+            remainder -= pick;
+          }
+        } else {
+          for (let i = 0; i < cfg.numbersCount; i++) {
+            numbers.push(randomIntInclusive(maxValue, minValue));
+          }
         }
       }
     }
