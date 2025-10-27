@@ -51,6 +51,21 @@ export function generateProblemFactory(settings: GeneratorSettings) {
     return Math.max(1, Math.floor(Math.log10(Math.max(1, n))) + 1);
   }
 
+  function digitAtPlace(num: number, place: number): number {
+    return Math.floor(Math.abs(num) / place) % 10;
+  }
+
+  function pickRandom<T>(arr: T[]): T {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function getAvailablePlaces(max: number): number[] {
+    const places: number[] = [1];
+    let p = 10;
+    while (p <= max) { places.push(p); p *= 10; }
+    return places;
+  }
+
   function ensureNonNegativePair(a: number, b: number): [number, number] {
     if (a < b) return [b, a];
     return [a, b];
@@ -146,139 +161,97 @@ export function generateProblemFactory(settings: GeneratorSettings) {
     const effectiveNumbersCount = hasMulOrDiv ? Math.min(cfg.numbersCount, 3) : cfg.numbersCount;
 
     if (lawsOn && effectiveNumbersCount >= 2 && maxValue >= 1) {
-      const wantsMixedPlusMinus = effectiveNumbersCount >= 3 && cfg.operations.includes('+') && cfg.operations.includes('-');
-      const pickLaw = (): 'five' | 'ten' => (cfg.lawsMode === 'both') ? (Math.random() < 0.5 ? 'five' : 'ten') : (cfg.lawsMode as 'five' | 'ten');
+      const opPool = cfg.operations.filter(o => o === '+' || o === '-');
+      if (opPool.length === 0) opPool.push('+');
+      opsSequence = Array.from({ length: effectiveNumbersCount - 1 }, () => pickRandom(opPool)) as Operation[];
+      // Доля шагов с формулами
+      const totalSteps = opsSequence.length;
+      let targetFormulaSteps = totalSteps === 1 ? 1 : Math.max(1, Math.floor(totalSteps * 0.6));
 
-      if (wantsMixedPlusMinus) {
-        // Смешанная последовательность под законы: генерируем знаки и числа пошагово
-        const maxAttempts = 25;
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
-          numbers.length = 0;
-          // последовательность знаков
-          opsSequence = Array.from({ length: effectiveNumbersCount - 1 }, () => (Math.random() < 0.5 ? '+' : '-')) as Operation[];
-          if (!opsSequence.includes('+')) opsSequence[0] = '+';
-          if (!opsSequence.includes('-')) opsSequence[opsSequence.length - 1] = '-';
-          // стартовая пара
-          const lawFirst = pickLaw();
-          const pair = lawFirst === 'ten' ? generateLawPairTen(opsSequence[0], maxValue, minValue) : generateLawPairFive(opsSequence[0], maxValue, minValue);
-          numbers.push(pair[0], pair[1]);
-          let current = opsSequence[0] === '-' ? pair[0] - pair[1] : pair[0] + pair[1];
-          // остальные шаги
-          let ok = true;
-          for (let i = 1; i < opsSequence.length; i++) {
-            const op = opsSequence[i];
-            const useLaw = pickLaw();
+      // Начальное число — в пределах диапазона
+      let current = randomIntInclusive(maxValue, minValue);
+      numbers.push(current);
+
+      const places = getAvailablePlaces(maxValue);
+      for (let i = 0; i < totalSteps; i++) {
+        const op = opsSequence[i];
+        const useLaw: 'five' | 'ten' = (cfg.lawsMode === 'both') ? (Math.random() < 0.5 ? 'five' : 'ten') : (cfg.lawsMode as 'five' | 'ten');
+        let madeFormula = false;
+        // Попытка сделать формулу на случайной позиции (единицы/десятки/сотни/тысячи)
+        if (targetFormulaSteps > 0) {
+          const shuffledPlaces = [...places].sort(() => Math.random() - 0.5);
+          for (const place of shuffledPlaces) {
+            const d = digitAtPlace(current, place);
             if (op === '+') {
               if (useLaw === 'five') {
-                const unitsNow = current % 10;
-                const minU = Math.max(1, 6 - (unitsNow % 10));
-                const u = minU > 4 ? 1 : randomIntInclusive(4, minU);
-                const n = makeWithUnits(maxValue, u, minValue);
-                numbers.push(n);
-                current += n;
-              } else {
-                const unitsNow = current % 10;
-                const u = (10 - (unitsNow % 10)) % 10 || 0;
-                const n = makeWithUnits(maxValue, u === 0 ? 0 : u, minValue);
-                numbers.push(n);
-                current += n;
+                if (d <= 4) {
+                  const aMin = Math.max(1, 5 - d);
+                  if (aMin <= 4) {
+                    const a = randomIntInclusive(4, aMin);
+                    const n = a * place;
+                    numbers.push(n);
+                    current += n;
+                    madeFormula = true;
+                    break;
+                  }
+                }
+              } else { // ten
+                const aMin = Math.max(1, 10 - d);
+                if (aMin <= 9) {
+                  const a = randomIntInclusive(9, aMin);
+                  const n = a * place;
+                  numbers.push(n);
+                  current += n;
+                  madeFormula = true;
+                  break;
+                }
               }
             } else { // '-'
               if (useLaw === 'five') {
-                const unitsNow = ((current % 10) + 10) % 10;
-                let u = unitsNow >= 4 ? 4 : randomIntInclusive(4, Math.max(1, unitsNow + 1));
-                if (u <= unitsNow) u = Math.min(4, unitsNow + 1);
-                const n = makeWithUnits(maxValue, u, minValue);
-                const candidate = current - n;
-                if (candidate < 0) {
-                  const smaller = makeWithUnits(Math.max(minValue, Math.floor(current / 10) * 10 + u), u, minValue);
-                  const val = Math.min(smaller, current);
-                  numbers.push(val);
-                  current -= val;
-                } else {
-                  numbers.push(n);
-                  current = candidate;
+                if (d >= 5) {
+                  const bMin = Math.max(1, d - 4);
+                  const bMax = Math.min(4, d);
+                  if (bMin <= bMax && current - bMin * place >= 0) {
+                    const b = randomIntInclusive(bMax, bMin);
+                    const n = b * place;
+                    numbers.push(n);
+                    current -= n;
+                    madeFormula = true;
+                    break;
+                  }
                 }
               } else { // ten
-                const unitsNow = ((current % 10) + 10) % 10;
-                let u = unitsNow >= 9 ? 9 : randomIntInclusive(9, unitsNow + 1);
-                const n = makeWithUnits(maxValue, u, minValue);
-                const candidate = current - n;
-                if (candidate < 0) {
-                  const smaller = makeWithUnits(Math.max(minValue, Math.floor(current / 10) * 10 + u), u, minValue);
-                  const val = Math.min(smaller, current);
-                  numbers.push(val);
-                  current -= val;
-                } else {
-                  numbers.push(n);
-                  current = candidate;
+                const bMin = d + 1;
+                if (bMin <= 9) {
+                  const b = randomIntInclusive(9, bMin);
+                  const n = b * place;
+                  if (current - n >= 0) {
+                    numbers.push(n);
+                    current -= n;
+                    madeFormula = true;
+                    break;
+                  }
                 }
               }
             }
           }
-          if (ok && current >= 0) break; // итог неотрицателен
-          if (attempt === maxAttempts - 1 && current < 0) {
-            const deficit = Math.abs(current);
-            numbers[0] = Math.min(maxValue, numbers[0] + deficit);
-          }
         }
-      } else {
-        // Старый путь: однотипные операции под выбранный закон
-        const pair = (cfg.lawsMode === 'ten')
-          ? generateLawPairTen(operation, maxValue, minValue)
-          : (cfg.lawsMode === 'five')
-            ? generateLawPairFive(operation, maxValue, minValue)
-            : (Math.random() < 0.5
-                ? generateLawPairFive(operation, maxValue, minValue)
-                : generateLawPairTen(operation, maxValue, minValue));
-        numbers.push(pair[0], pair[1]);
-        let current = operation === '-' ? (pair[0] - pair[1]) : (pair[0] + pair[1]);
-        for (let i = 2; i < cfg.numbersCount; i++) {
-          if (operation === '+') {
-            if (cfg.lawsMode === 'five' || cfg.lawsMode === 'both') {
-              const unitsNow = current % 10;
-              const minU = Math.max(1, 6 - (unitsNow % 10));
-              const u = minU > 4 ? 1 : randomIntInclusive(4, minU);
-              const n = makeWithUnits(maxValue, u, minValue);
-              numbers.push(n);
-              current += n;
-            } else {
-              const unitsNow = current % 10;
-              const u = (10 - (unitsNow % 10)) % 10 || 0;
-              const n = makeWithUnits(maxValue, u === 0 ? 0 : u, minValue);
-              numbers.push(n);
-              current += n;
-            }
+
+        if (!madeFormula) {
+          // Неформульный шаг — небольшой плюс/минус в пределах диапазона и не уводим в минус
+          const place = pickRandom(places);
+          const a = op === '+' ? randomIntInclusive(4, 1) : randomIntInclusive(4, 1);
+          const n = a * place;
+          if (op === '+') {
+            numbers.push(Math.min(n, maxValue));
+            current += Math.min(n, maxValue);
           } else {
-            if (cfg.lawsMode === 'five' || cfg.lawsMode === 'both') {
-              const unitsNow = ((current % 10) + 10) % 10;
-              let u = unitsNow >= 4 ? 4 : randomIntInclusive(4, Math.max(1, unitsNow + 1));
-              if (u <= unitsNow) u = Math.min(4, unitsNow + 1);
-              const n = makeWithUnits(maxValue, u, minValue);
-              const candidate = current - n;
-              if (candidate < 0) {
-                const smaller = makeWithUnits(Math.max(minValue, Math.floor(current / 10) * 10 + u), u, minValue);
-                numbers.push(Math.min(smaller, current));
-                current -= Math.min(smaller, current);
-              } else {
-                numbers.push(n);
-                current = candidate;
-              }
-            } else {
-              const unitsNow = ((current % 10) + 10) % 10;
-              let u = unitsNow >= 9 ? 9 : randomIntInclusive(9, unitsNow + 1);
-              const n = makeWithUnits(maxValue, u, minValue);
-              const candidate = current - n;
-              if (candidate < 0) {
-                const smaller = makeWithUnits(Math.max(minValue, Math.floor(current / 10) * 10 + u), u, minValue);
-                numbers.push(Math.min(smaller, current));
-                current -= Math.min(smaller, current);
-              } else {
-                numbers.push(n);
-                current = candidate;
-              }
-            }
+            const step = Math.min(n, current);
+            numbers.push(step);
+            current -= step;
           }
+        } else {
+          targetFormulaSteps -= 1;
         }
       }
     } else {
