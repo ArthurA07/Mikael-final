@@ -371,48 +371,56 @@ export function generateProblemFactory(settings: GeneratorSettings) {
         correctAnswer = numbers.reduce((p, n) => p * n, 1);
         break;
       case '/':
+        // Ограничение: делимое не должно превышать 6 цифр
+        const MAX_DIVIDEND = 999999; // 6 цифр
         // Обеспечиваем целочисленный ответ. Поддержка цепочки из 2 делений (3 числа максимум).
         if ((effectiveNumbersCount || 2) > 2) {
           const divisors: number[] = [];
-          for (let i = 0; i < (Math.min(effectiveNumbersCount, 3) - 1); i++) {
+          let product = 1;
+          const countDivs = Math.min(effectiveNumbersCount, 3) - 1; // 1 или 2 делителя
+          for (let i = 0; i < countDivs; i++) {
             const useDigits = i === 0 ? cfg.divisionDivisorDigits : (cfg.divisionSecondDivisorDigits || cfg.divisionDivisorDigits);
-            const d = useDigits
-              ? randomIntInclusive(Math.pow(10, useDigits) - 1, Math.pow(10, useDigits - 1))
-              : randomIntInclusive(Math.min(cfg.numberRange, 100), 1);
-            divisors.push(Math.max(1, d));
+            // Верхняя граница с учётом ограничения на делимое
+            const maxAllowedByDividend = Math.max(1, Math.floor(MAX_DIVIDEND / product));
+            let upper = Math.min(maxAllowedByDividend, Math.min(cfg.numberRange, 1000));
+            if (useDigits) upper = Math.min(upper, Math.pow(10, useDigits) - 1);
+            const lower = useDigits ? Math.pow(10, useDigits - 1) : 1;
+            const d = Math.max(1, randomIntInclusive(upper, lower));
+            divisors.push(d);
+            product *= d;
           }
-          let quotient = randomIntInclusive(99, 1);
-          const product = divisors.reduce((p, n) => p * n, 1);
+          // Подбираем частное так, чтобы dividend<=MAX_DIVIDEND и соблюсти ограничение разрядности делимого, если задано
+          let minDividend = 1;
+          let maxDividend = Math.min(MAX_DIVIDEND, cfg.numberRange); // ограничиваем и диапазоном тренажёра
           if (cfg.divisionDividendDigits) {
-            const minDividend = Math.pow(10, cfg.divisionDividendDigits - 1);
-            const maxDividend = Math.pow(10, cfg.divisionDividendDigits) - 1;
-            const minQ = Math.ceil(minDividend / product);
-            const maxQ = Math.floor(maxDividend / product);
-            if (minQ <= maxQ) quotient = randomIntInclusive(maxQ, Math.max(1, minQ));
+            minDividend = Math.pow(10, cfg.divisionDividendDigits - 1);
+            maxDividend = Math.min(maxDividend, Math.pow(10, cfg.divisionDividendDigits) - 1);
           }
-          const dividend = product * quotient;
-          return { numbers: [dividend, ...divisors], operation: '/', correctAnswer: quotient };
+          const minQ = Math.max(1, Math.ceil(minDividend / product));
+          const maxQ = Math.max(1, Math.floor(maxDividend / product));
+          const q = minQ <= maxQ ? randomIntInclusive(maxQ, minQ) : 1;
+          const dividend = product * q;
+          return { numbers: [dividend, ...divisors], operation: '/', correctAnswer: q };
         }
         // Базовый случай из 2 чисел
-        if (cfg.divisionDividendDigits || cfg.divisionDivisorDigits) {
-          const divisor = cfg.divisionDivisorDigits
-            ? randomIntInclusive(Math.pow(10, cfg.divisionDivisorDigits) - 1, Math.pow(10, cfg.divisionDivisorDigits - 1))
-            : randomIntInclusive(Math.min(cfg.numberRange, 100));
-          let quotient = randomIntInclusive(99, 1);
-          if (cfg.divisionDividendDigits) {
-            const minDividend = Math.pow(10, cfg.divisionDividendDigits - 1);
-            const maxDividend = Math.pow(10, cfg.divisionDividendDigits) - 1;
-            const minQ = Math.ceil(minDividend / divisor);
-            const maxQ = Math.floor(maxDividend / divisor);
-            if (minQ <= maxQ) quotient = randomIntInclusive(maxQ, Math.max(1, minQ));
-          }
-          const dividend = divisor * quotient;
-          return { numbers: [dividend, divisor], operation: '/', correctAnswer: quotient };
-        }
         {
-          const quotient = randomIntInclusive(Math.min(cfg.numberRange, 100));
-          const divisor = randomIntInclusive(Math.min(cfg.numberRange, 100));
-          const dividend = quotient * divisor;
+          // Поддержка разрядностей и ограничение делимого ≤ 6 цифр
+          const useDigits = cfg.divisionDivisorDigits;
+          let upperDivisor = Math.min(cfg.numberRange, 1000);
+          if (useDigits) upperDivisor = Math.min(upperDivisor, Math.pow(10, useDigits) - 1);
+          const lowerDivisor = useDigits ? Math.pow(10, useDigits - 1) : 1;
+          const divisor = Math.max(1, randomIntInclusive(upperDivisor, lowerDivisor));
+
+          let minDividend = 1;
+          let maxDividend = Math.min(MAX_DIVIDEND, cfg.numberRange);
+          if (cfg.divisionDividendDigits) {
+            minDividend = Math.pow(10, cfg.divisionDividendDigits - 1);
+            maxDividend = Math.min(maxDividend, Math.pow(10, cfg.divisionDividendDigits) - 1);
+          }
+          const minQ = Math.max(1, Math.ceil(minDividend / divisor));
+          const maxQ = Math.max(1, Math.floor(maxDividend / divisor));
+          const quotient = minQ <= maxQ ? randomIntInclusive(maxQ, minQ) : 1;
+          const dividend = divisor * quotient;
           return { numbers: [dividend, divisor], operation: '/', correctAnswer: quotient };
         }
       default:
