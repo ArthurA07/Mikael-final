@@ -161,24 +161,27 @@ export function generateProblemFactory(settings: GeneratorSettings) {
     const effectiveNumbersCount = hasMulOrDiv ? Math.min(cfg.numbersCount, 3) : cfg.numbersCount;
 
     if (lawsOn && effectiveNumbersCount >= 2 && maxValue >= 1) {
-      const opPool = cfg.operations.filter(o => o === '+' || o === '-');
-      if (opPool.length === 0) opPool.push('+');
-      opsSequence = Array.from({ length: effectiveNumbersCount - 1 }, () => pickRandom(opPool)) as Operation[];
-      // Доля шагов с формулами
-      const totalSteps = opsSequence.length;
-      let targetFormulaSteps = totalSteps === 1 ? 1 : Math.max(1, Math.floor(totalSteps * 0.6));
+      // Пытаемся сгенерировать выражение так, чтобы доля формул удовлетворяла требованиям.
+      const attempts = 30;
+      for (let attempt = 0; attempt < attempts; attempt++) {
+        numbers.length = 0;
+        opsSequence = [];
+        const opPool = cfg.operations.filter(o => o === '+' || o === '-');
+        if (opPool.length === 0) opPool.push('+');
+        opsSequence = Array.from({ length: effectiveNumbersCount - 1 }, () => pickRandom(opPool)) as Operation[];
+        const totalSteps = opsSequence.length;
+        const requiredFormulaSteps = totalSteps <= 2 ? totalSteps : Math.max(1, Math.floor(totalSteps * 0.6));
+        let leftToMake = requiredFormulaSteps;
 
-      // Начальное число — в пределах диапазона
-      let current = randomIntInclusive(maxValue, minValue);
-      numbers.push(current);
+        let current = randomIntInclusive(maxValue, minValue);
+        numbers.push(current);
+        const places = getAvailablePlaces(maxValue);
+        let formulaCount = 0;
 
-      const places = getAvailablePlaces(maxValue);
-      for (let i = 0; i < totalSteps; i++) {
-        const op = opsSequence[i];
-        const useLaw: 'five' | 'ten' = (cfg.lawsMode === 'both') ? (Math.random() < 0.5 ? 'five' : 'ten') : (cfg.lawsMode as 'five' | 'ten');
-        let madeFormula = false;
-        // Попытка сделать формулу на случайной позиции (единицы/десятки/сотни/тысячи)
-        if (targetFormulaSteps > 0) {
+        for (let i = 0; i < totalSteps; i++) {
+          const op = opsSequence[i];
+          const useLaw: 'five' | 'ten' = (cfg.lawsMode === 'both') ? (Math.random() < 0.5 ? 'five' : 'ten') : (cfg.lawsMode as 'five' | 'ten');
+          let madeFormula = false;
           const shuffledPlaces = [...places].sort(() => Math.random() - 0.5);
           for (const place of shuffledPlaces) {
             const d = digitAtPlace(current, place);
@@ -195,7 +198,7 @@ export function generateProblemFactory(settings: GeneratorSettings) {
                     break;
                   }
                 }
-              } else { // ten
+              } else {
                 const aMin = Math.max(1, 10 - d);
                 if (aMin <= 9) {
                   const a = randomIntInclusive(9, aMin);
@@ -206,7 +209,7 @@ export function generateProblemFactory(settings: GeneratorSettings) {
                   break;
                 }
               }
-            } else { // '-'
+            } else {
               if (useLaw === 'five') {
                 if (d >= 5) {
                   const bMin = Math.max(1, d - 4);
@@ -220,7 +223,7 @@ export function generateProblemFactory(settings: GeneratorSettings) {
                     break;
                   }
                 }
-              } else { // ten
+              } else {
                 const bMin = d + 1;
                 if (bMin <= 9) {
                   const b = randomIntInclusive(9, bMin);
@@ -235,12 +238,23 @@ export function generateProblemFactory(settings: GeneratorSettings) {
               }
             }
           }
-        }
 
-        if (!madeFormula) {
-          // Неформульный шаг — небольшой плюс/минус в пределах диапазона и не уводим в минус
+          if (madeFormula) {
+            formulaCount += 1;
+            leftToMake = Math.max(0, leftToMake - 1);
+            continue;
+          }
+
+          // Если формула обязательна (в варианте с 1-2 шагами), пробуем другой старт с нуля
+          if (requiredFormulaSteps === totalSteps) {
+            // прерываем и начинаем заново
+            formulaCount = -1;
+            break;
+          }
+
+          // Иначе — делаем нефомульный шаг (маленький, безопасный)
           const place = pickRandom(places);
-          const a = op === '+' ? randomIntInclusive(4, 1) : randomIntInclusive(4, 1);
+          const a = randomIntInclusive(4, 1);
           const n = a * place;
           if (op === '+') {
             numbers.push(Math.min(n, maxValue));
@@ -250,8 +264,16 @@ export function generateProblemFactory(settings: GeneratorSettings) {
             numbers.push(step);
             current -= step;
           }
+        }
+
+        if (formulaCount === -1) continue; // перегенерация для строгого требования
+        if (formulaCount >= requiredFormulaSteps) {
+          break; // удачный вариант
         } else {
-          targetFormulaSteps -= 1;
+          // пробуем заново
+          numbers.length = 0;
+          opsSequence = [];
+          continue;
         }
       }
     } else {
